@@ -23,7 +23,7 @@ import os
 from os import walk
 import glob
 #import win32com.client
-import pythoncom
+#import pythoncom
 from django.conf import settings
 from pptx import Presentation
 from datetime import datetime
@@ -922,7 +922,7 @@ class CustomizePPT(APIView):                      #Get functions related to ppt 
                 fantasy_zip = zipfile.ZipFile(os.path.join(settings.MEDIA_ROOT) + ("/output/") + 'National Toppers-' + data[0]['group'] + '-' + data[0]['year'] + '.zip', 'w')
                 p='National Toppers-' + data[0]['group'] + '-' + data[0]['year']
             prs.save(path)
-            pythoncom.CoInitialize()
+#            pythoncom.CoInitialize()
             
             files=glob.glob(path)
 
