@@ -807,7 +807,8 @@ class CustomizePPT(APIView):                      #Get functions related to ppt 
 
     def saveppt(self,f):
         ppt= Presentation(f)
-        ppt.save(os.path.join(settings.MEDIA_ROOT) +'\ppt\\'+ f.name)
+        print(os.path.join(settings.MEDIA_ROOT,'ppt',f.name))
+        ppt.save(os.path.join(settings.MEDIA_ROOT,'ppt',f.name))
 
     parser_classes = (FileUploadParser,)
     def post(self,request):
@@ -910,27 +911,27 @@ class CustomizePPT(APIView):                      #Get functions related to ppt 
             path = ''
             p=''
             if(type=='participation'):
-                path=os.path.join(settings.MEDIA_ROOT) + '\output\\'+data[i]['Name']+'-'+data[i]['loginID']+'-'+school+'-Class-'+data[0]['class']+'-'+data[0]['group']+'-'+data[0]['year']+'.pptx'
+                path=os.path.join(settings.MEDIA_ROOT) + '/output//'+data[i]['Name']+'-'+data[i]['loginID']+'-'+school+'-Class-'+data[0]['class']+'-'+data[0]['group']+'-'+data[0]['year']+'.pptx'
                 p=school+'-Class-'+data[0]['class']+'-'+data[0]['group']+'-'+data[0]['year']
                 fantasy_zip = zipfile.ZipFile(os.path.join(settings.MEDIA_ROOT) + ("/output/") +school+'-Class-'+data[0]['class']+'-'+data[0]['year']+ '.zip', 'w')
             elif(type=='schoolToppers'):
-                path=os.path.join(settings.MEDIA_ROOT) + '\output\\' +data[i]['Name']+'-'+data[i]['loginID']+'-'+ school + '-Toppers-' + data[0][ 'group'] + '-' + data[0]['year'] + '.pptx'
+                path=os.path.join(settings.MEDIA_ROOT) + '/output//' +data[i]['Name']+'-'+data[i]['loginID']+'-'+ school + '-Toppers-' + data[0][ 'group'] + '-' + data[0]['year'] + '.pptx'
                 fantasy_zip = zipfile.ZipFile(os.path.join(settings.MEDIA_ROOT) + ("/output/") + school +'-Toppers-' + data[0][ 'group'] + '-' + data[0]['year'] + '.zip', 'w')
                 p=school + '-Toppers-' + data[0][ 'group'] + '-' + data[0]['year']
             elif (type == 'nationalToppers'):
-                path = os.path.join(settings.MEDIA_ROOT) + '\output\\' + data[i]['Name']+'-'+data[i]['loginID']+'-'+ 'National Toppers-' + data[0]['group'] + '-' + data[0]['year'] + '.pptx'
+                path = os.path.join(settings.MEDIA_ROOT) + '/output//' + data[i]['Name']+'-'+data[i]['loginID']+'-'+ 'National Toppers-' + data[0]['group'] + '-' + data[0]['year'] + '.pptx'
                 fantasy_zip = zipfile.ZipFile(os.path.join(settings.MEDIA_ROOT) + ("/output/") + 'National Toppers-' + data[0]['group'] + '-' + data[0]['year'] + '.zip', 'w')
                 p='National Toppers-' + data[0]['group'] + '-' + data[0]['year']
             prs.save(path)
 #            pythoncom.CoInitialize()
-            
+
             files=glob.glob(path)
 
             for filename in files:
                 command = "unoconv -f pdf '" + filename+"'"
                 os.system(command)
                 os.remove(path)
-                
+
 #             def convert(files, formatType=32):
 #                 for filename in files:
 #                     try :
@@ -976,13 +977,13 @@ class deleteFiles(APIView):                       #Delete zip created API
         if(type=='participation'):
             School = school.objects.filter(schoolID=id)
             sch = SchoolSerializers(School, many=True)
-            os.remove(os.path.join(settings.MEDIA_ROOT) + '\output\\'+sch.data[0]['schoolName']+', '+sch.data[0]['addressID']['city']+'-Class-'+str(Class)+'-'+ year + '.zip')
+            os.remove(os.path.join(settings.MEDIA_ROOT) + '/output//'+sch.data[0]['schoolName']+', '+sch.data[0]['addressID']['city']+'-Class-'+str(Class)+'-'+ year + '.zip')
         if(type=='schoolToppers'):
             School = school.objects.filter(schoolID=id)
             sch = SchoolSerializers(School, many=True)
-            os.remove(os.path.join(settings.MEDIA_ROOT) + '\output\\' + sch.data[0]['schoolName'] + ', ' +sch.data[0]['addressID']['city'] + '-Toppers-' +  group + '-' + year + '.zip')
+            os.remove(os.path.join(settings.MEDIA_ROOT) + '/output//' + sch.data[0]['schoolName'] + ', ' +sch.data[0]['addressID']['city'] + '-Toppers-' +  group + '-' + year + '.zip')
         if(type=='nationalToppers'):
-            os.remove(os.path.join(settings.MEDIA_ROOT) + '\output\\' + 'National Toppers-' + group + '-' + year + '.zip')
+            os.remove(os.path.join(settings.MEDIA_ROOT) + '/output//' + 'National Toppers-' + group + '-' + year + '.zip')
         return Response(status=200)
 
 class GetParticipationCertificates(APIView):                  #Get Participation Certificate API
@@ -1013,7 +1014,7 @@ class GetParticipationCertificates(APIView):                  #Get Participation
                              'class':str(d.data[i]['schoolClassID']['classNumber'])})
             school=d.data[0]['schoolClassID']['schoolID']['schoolName']+', '+d.data[0]['schoolClassID']['schoolID']['addressID']['city']
             type='participation'
-            c.ppt(os.path.join(settings.MEDIA_ROOT) + '\ppt\\'+template.data, data, school,type,duplicate=False)
+            c.ppt(os.path.join(settings.MEDIA_ROOT) + '/ppt//'+template.data, data, school,type,duplicate=False)
             return Response(status=200)
         else:
             return Response(status=204)
@@ -1047,7 +1048,7 @@ class GetSchoolToppers(APIView):                     #Get School Toppers Cerific
                     data = sorted(data, key=lambda k: (-k['score'], k['time']))
                     school = d.data[0]['schoolClassID']['schoolID']['schoolName'] + ', ' + d.data[0]['schoolClassID']['schoolID']['addressID']['city']
                     type='schoolToppers'
-                    c.ppt(os.path.join(settings.MEDIA_ROOT) + '\ppt\\'+template.data, data, school,type,duplicate=False)
+                    c.ppt(os.path.join(settings.MEDIA_ROOT) + '/ppt//'+template.data, data, school,type,duplicate=False)
                     return Response(status=200)
                 else:
                     return Response(status=204)
@@ -1265,7 +1266,7 @@ class GetNationalToppers(APIView):                     #Get National Toppers Cer
             data = sorted(data, key=itemgetter('score', 'time'))
             data = sorted(data, key=lambda k: (-k['score'], k['time']))
             type='nationalToppers'
-            c.ppt(os.path.join(settings.MEDIA_ROOT) + '\ppt\\'+template.data, data, None,type,duplicate=False)
+            c.ppt(os.path.join(settings.MEDIA_ROOT) + '/ppt//'+template.data, data, None,type,duplicate=False)
             return Response(status=200)
         else:
          return Response(status=204)

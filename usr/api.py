@@ -543,7 +543,7 @@ class ResetPasswordView(APIView):
         c = {
             'email': user.email,
             'domain': request.META['HTTP_HOST'],
-            'site_name': 'Bebras Admin',
+            'site_name': 'Bebras User Portal',
             'uid': urlsafe_base64_encode(force_bytes(user.pk)),
             'user': user,
             'token': default_token_generator.make_token(user),

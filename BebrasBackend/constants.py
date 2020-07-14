@@ -1,10 +1,10 @@
 quesList = []
 optList = []
 
-storageURL = "http://localhost:8000/";
-baseURL = "http://localhost:3002/";
+storageURL = "http://54.196.61.229:8000/";
+baseURL = "http://54.196.61.229:3002/";
 # customize ppt change path for uploading ppt
-baseurl='http://localhost:3001/'
+baseurl='http://54.196.61.229:3001/'
 #All data constants
 AdminRoleID=1
 TeacherRoleID=2
