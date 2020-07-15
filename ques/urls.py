@@ -11,5 +11,7 @@ urlpatterns = [
      re_path('getTranslations/(?P<questionID>\d+)/$',qviews.ViewTraslations.as_view()),
      re_path('getImages/(?P<ObjectID>\d+)/$',qviews.ViewImage.as_view()),
      re_path('getQuesSkills/(?P<questionID>\d+)/$',qviews.ViewQuestionSkills.as_view()),
-     re_path('getQuesYearWise/(?P<year>[\w.@+-]+)/$',qviews.GetQuesYearWise.as_view()),
+     # re_path('getQuesYearWise/(?P<year>[\w.@+-]+)/$',qviews.GetQuesYearWise.as_view()),
+     path('editDbQues/',qviews.EditPreviousQuestion.as_view()),
+     path('getQuesSearch/',qviews.QuestionSearch.as_view()),
 ]
