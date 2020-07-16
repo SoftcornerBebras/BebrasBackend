@@ -31,6 +31,7 @@ urlpatterns = [
      re_path('getAgeGrpWise/(?P<cmpID>\d+)&(?P<AgeID>\d+)&(?P<schoolID>\d+)/$',cpviews.GetStudentsAgeGroupWise.as_view()),
      re_path('getAgeGrpWiseToppers/(?P<cmpID>\d+)&(?P<AgeID>\d+)&(?P<schoolID>\d+)/$',cpviews.GetStudentsAgeGroupWiseToppers.as_view()),
      re_path('getAllStudentsSchoolWise/(?P<schoolID>\d+)/$', cpviews.GetAllStudentsSchoolWise.as_view()),
+     re_path('getAllRegisteredStudentsSchoolWise/(?P<schoolID>\d+)/$', cpviews.GetAllRegisteredStudentsSchoolWise.as_view()),
      re_path('updateQuestion/(?P<questionTranslationID>\d+)/$',cpviews.UpdateQuestionView.as_view()),
      path('insertTranslation/',cpviews.InsertTranslation.as_view()),
      re_path('getAgeGroupsPerQues/(?P<questionID>\d+)/$',cpviews.ViewAgeGroupsPerQues.as_view()),
