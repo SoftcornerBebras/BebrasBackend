@@ -22,8 +22,8 @@ import six
 import os
 from os import walk
 import glob
-#import win32com.client
-#import pythoncom
+import win32com.client
+import pythoncom
 from django.conf import settings
 from pptx import Presentation
 from datetime import datetime
@@ -37,10 +37,13 @@ class InsertTranslation(APIView):                     #Insert translation API
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self,request):
-        serializer = InsertTranslationSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(status=200)
+        try:
+            serializer = InsertTranslationSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(status=200)
+        except Exception as e:
+            return Response(e,status=500)
 
 def handle_uploaded_file(f):
     with open('media/images/' + f.name, 'wb+') as destination:
@@ -54,15 +57,18 @@ class InsertMcqQuestion(APIView):                    #Insert mcq Ques API
 
     parser_class = (FileUploadParser,)
     def post(self,request):
-        data = json.loads(request.data['data'])
-        serializer = InsertMcqQuesSerializer(data=data)
-        if serializer!= "":
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-        files = request.FILES.getlist('image')
-        for f in files:
-            handle_uploaded_file(f)
-        return Response(status=200)
+        try:
+            data = json.loads(request.data['data'])
+            serializer = InsertMcqQuesSerializer(data=data)
+            if serializer!= "":
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+            files = request.FILES.getlist('image')
+            for f in files:
+                handle_uploaded_file(f)
+            return Response(status=200)
+        except Exception as e:
+            return Response(e,status=500)
 
 @parser_classes((MultiPartParser,))
 class InsertMcqWithImagesQuestion(APIView):           #Insert mcq with images Ques API
@@ -71,15 +77,18 @@ class InsertMcqWithImagesQuestion(APIView):           #Insert mcq with images Qu
 
     parser_class = (FileUploadParser,)
     def post(self,request):
-        data = json.loads(request.data['data'])
-        serializer = InsertMcqWithImagesQuesSerializer(data=data)
-        if serializer!= "":
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-        files = request.FILES.getlist('image')
-        for f in files:
-            handle_uploaded_file(f)
-        return Response(status=200)
+        try:
+            data = json.loads(request.data['data'])
+            serializer = InsertMcqWithImagesQuesSerializer(data=data)
+            if serializer!= "":
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+            files = request.FILES.getlist('image')
+            for f in files:
+                handle_uploaded_file(f)
+            return Response(status=200)
+        except Exception as e:
+            return Response(e,status=500)
 
 
 class ViewAgeGroupsPerQues(APIView):                   #Get Age Groups Per Ques
@@ -87,9 +96,12 @@ class ViewAgeGroupsPerQues(APIView):                   #Get Age Groups Per Ques
       permission_classes = (permissions.IsAuthenticated,)
 
       def get(self,request,**kwargs):
-         cmpqid = QuestionAge.objects.filter(questionID=kwargs['questionID'])
-         serializer = GetAgeQuestion(cmpqid, many=True)
-         return Response(serializer.data)
+         try:
+             cmpqid = QuestionAge.objects.filter(questionID=kwargs['questionID'])
+             serializer = GetAgeQuestion(cmpqid, many=True)
+             return Response(serializer.data)
+         except Exception as e:
+            return Response(e,status=500)
 
 
 class GetAgeGroups(APIView):          #Get Age Groups Valid for Current Year
@@ -97,22 +109,25 @@ class GetAgeGroups(APIView):          #Get Age Groups Valid for Current Year
       permission_classes = (permissions.IsAuthenticated,)
 
       def get(self,request):
-          enddates = str(datetime.now().year)+"-12-01"
-          if datetime.now().date() < datetime.strptime(enddates,'%Y-%m-%d').date():
-              startrange = str(datetime.now().year-1)+"-12-01"
-              lists = AgeGroup.objects.filter(created_on__range=[datetime.strptime(startrange,'%Y-%m-%d').date(),datetime.strptime(enddates,'%Y-%m-%d').date()]).order_by('AgeGroupName')
-              serializer = GetAgeGroupsid(lists, many=True)
-              return Response(serializer.data)
-          else:
-              if datetime.now().date() >= datetime.strptime(enddates,'%Y-%m-%d').date():
-                   startrange = str(datetime.now().year+1)+"-12-01"
-                   result = AgeGroup.objects.filter(created_on__range=[datetime.strptime(enddates,'%Y-%m-%d').date(),datetime.strptime(startrange,'%Y-%m-%d').date()]).exists()
-                   if result==True:
-                      lists =  AgeGroup.objects.filter(created_on__range=[datetime.strptime(enddates,'%Y-%m-%d').date(),datetime.strptime(startrange,'%Y-%m-%d').date()]).order_by('AgeGroupName')
-                      serializer = GetAgeGroupsid(lists, many=True)
-                      return Response(serializer.data)
-                   else:
-                     return Response("Redirect")
+          try:
+              enddates = str(datetime.now().year)+"-12-01"
+              if datetime.now().date() < datetime.strptime(enddates,'%Y-%m-%d').date():
+                  startrange = str(datetime.now().year-1)+"-12-01"
+                  lists = AgeGroup.objects.filter(created_on__range=[datetime.strptime(startrange,'%Y-%m-%d').date(),datetime.strptime(enddates,'%Y-%m-%d').date()]).order_by('AgeGroupName')
+                  serializer = GetAgeGroupsid(lists, many=True)
+                  return Response(serializer.data)
+              else:
+                  if datetime.now().date() >= datetime.strptime(enddates,'%Y-%m-%d').date():
+                       startrange = str(datetime.now().year+1)+"-12-01"
+                       result = AgeGroup.objects.filter(created_on__range=[datetime.strptime(enddates,'%Y-%m-%d').date(),datetime.strptime(startrange,'%Y-%m-%d').date()]).exists()
+                       if result==True:
+                          lists =  AgeGroup.objects.filter(created_on__range=[datetime.strptime(enddates,'%Y-%m-%d').date(),datetime.strptime(startrange,'%Y-%m-%d').date()]).order_by('AgeGroupName')
+                          serializer = GetAgeGroupsid(lists, many=True)
+                          return Response(serializer.data)
+                       else:
+                         return Response("Redirect")
+          except Exception as e:
+            return Response(e,status=500)
 
 def CheckAgeGrpsForBulkUpload():
     AgeGroupIDList = []
@@ -122,9 +137,10 @@ def CheckAgeGrpsForBulkUpload():
         lists = AgeGroup.objects.filter(created_on__range=[datetime.strptime(startrange, '%Y-%m-%d').date(),
                                                            datetime.strptime(enddates, '%Y-%m-%d').date()])
         serializer = GetAgeGroupsid(lists, many=True)
-        for i in range(0, len(serializer.data)):
-            AgeGroupIDList.append(serializer.data[i]['AgeGroupName'])
-            AgeGroupIDList.append(serializer.data[i]['AgeGroupID'])
+        if len(serializer.data) != 0:
+            for i in range(0, len(serializer.data)):
+                AgeGroupIDList.append(serializer.data[i]['AgeGroupName'])
+                AgeGroupIDList.append(serializer.data[i]['AgeGroupID'])
         return AgeGroupIDList
     else:
         if datetime.now().date() >= datetime.strptime(enddates, '%Y-%m-%d').date():
@@ -136,9 +152,10 @@ def CheckAgeGrpsForBulkUpload():
                 lists = AgeGroup.objects.filter(created_on__range=[datetime.strptime(enddates, '%Y-%m-%d').date(),
                                                                    datetime.strptime(startrange, '%Y-%m-%d').date()])
                 serializer = GetAgeGroupsid(lists, many=True)
-                for i in range(0, len(serializer.data)):
-                    AgeGroupIDList.append(serializer.data[i]['AgeGroupName'])
-                    AgeGroupIDList.append(serializer.data[i]['AgeGroupID'])
+                if len(serializer.data) !=0:
+                    for i in range(0, len(serializer.data)):
+                        AgeGroupIDList.append(serializer.data[i]['AgeGroupName'])
+                        AgeGroupIDList.append(serializer.data[i]['AgeGroupID'])
                 return AgeGroupIDList
             else:
                 return "Redirect"
@@ -172,11 +189,12 @@ def InsertBulkData(reader,ser,modified_by):
                                                            modified_on=modified_on)
             AgeGroupNameList = user['AgeGroups'].split(',')
             questLevelList = user['QuestionLevels'].split(',')
-            for i in range(0, len(AgeGroupNameList)):
-                index = ser.index(AgeGroupNameList[i])
-                AgeGroupNameRef = AgeGroup.objects.get(AgeGroupName=AgeGroupNameList[i],AgeGroupID=ser[index+1])
-                quesLevelRef = code.objects.get(codeName=questLevelList[i])
-                cmpQues = QuestionAge.objects.create(AgeGroupID=AgeGroupNameRef, questionID=ques,
+            if len(AgeGroupNameList) != 0:
+                for i in range(0, len(AgeGroupNameList)):
+                    index = ser.index(AgeGroupNameList[i])
+                    AgeGroupNameRef = AgeGroup.objects.get(AgeGroupName=AgeGroupNameList[i],AgeGroupID=ser[index+1])
+                    quesLevelRef = code.objects.get(codeName=questLevelList[i])
+                    cmpQues = QuestionAge.objects.create(AgeGroupID=AgeGroupNameRef, questionID=ques,
                                                              questionLevelCodeID=quesLevelRef)
             if user['AnswerText'] == "":
                 opt1 = option.objects.create(questionID=ques)
@@ -223,9 +241,10 @@ def ProcessCSVdata(reader,modified_by):
         else:
             ser = CheckAgeGrpsForBulkUpload()
             AgeGroupNameList = user['AgeGroups'].split(',')
-            for i in range(0, len(AgeGroupNameList)):
-                if AgeGroupNameList[i] not in ser:
-                    return "Redirect"
+            if len(AgeGroupNameList) !=0:
+                for i in range(0, len(AgeGroupNameList)):
+                    if AgeGroupNameList[i] not in ser:
+                        return "Redirect"
     InsertBulkData(lists,ser,modified_by)
 
 @parser_classes((MultiPartParser,))
@@ -235,152 +254,186 @@ class BulkUploadQuestion(APIView):                                   #Bulk Uploa
 
     parser_class = (FileUploadParser,)
     def post(self, request):
-        t = request.FILES['text']
-        modified_by = json.loads(request.data['data'])
-        f = io.TextIOWrapper(t.file)
-        reader = csv.DictReader(f)
-        ser = ProcessCSVdata(reader,modified_by['modified_by'])
-        if ser == "Redirect":
-            return Response("Redirect")
-        return Response(status=200)
+        try:
+            t = request.FILES['text']
+            modified_by = json.loads(request.data['data'])
+            f = io.TextIOWrapper(t.file)
+            reader = csv.DictReader(f)
+            ser = ProcessCSVdata(reader,modified_by['modified_by'])
+            if ser == "Redirect":
+                return Response("Redirect")
+            return Response(status=200)
+        except Exception as e:
+            return Response(e,status=500)
 
 class InsertMarkingSchemeView(APIView):                              #Insert Marking Scheme API
      authentication_classes = (TokenAuthentication, )
      permission_classes = (permissions.IsAuthenticated,)
 
      def post(self, request):
-        cmpAgeID = request.data.pop('competitionAgeID',None)
-        cmpAgeGrpD = cmpAgeID['created_on']
-        cmpAgeGrpName = cmpAgeID['AgeGroupName']
-        ageID = AgeGroup.objects.get(AgeGroupName = cmpAgeGrpName, created_on=cmpAgeGrpD)
-        cmpclass = AgeGroupClass.objects.filter(AgeGroupID=ageID.AgeGroupID)
-        classes = []
-        for i in range(0,len(cmpclass)):
-            classes.append(cmpclass[i].AgeGroupClassID)
-        cmpinfo = request.data.pop('CmpData',None)
-        cmptype = code.objects.get(codeName=cmpinfo['cmptype'])
-        cmpRef = competition.objects.get(competitionName = cmpinfo['competitionName'],startDate = cmpinfo['startDate'],competitionType = cmptype.codeID)
-        cmpage = competitionAge.objects.filter(AgeGroupClassID__in = classes,competitionID=cmpRef.competitionID)
-        questionLevelCodeID = request.data.pop('questionLevelCodeID', None)
-        corrMarks = request.data.pop('correctMarks',None)
-        incorrMarks = request.data.pop('incorrectMarks',None)
-        quesLevelRef = code.objects.get(codeName= questionLevelCodeID['codeName']['name'])
-        cmp_marks = ""
-        for i in range(0,len(cmpage)):
-            cmp_marks=competition_MarkScheme.objects.create(competitionAgeID=cmpage[i],questionLevelCodeID=quesLevelRef,correctMarks=corrMarks,incorrectMarks=incorrMarks)
-        return Response(status=200)
+        try:
+            cmpAgeID = request.data.pop('competitionAgeID',None)
+            cmpAgeGrpD = cmpAgeID['created_on']
+            cmpAgeGrpName = cmpAgeID['AgeGroupName']
+            ageID = AgeGroup.objects.get(AgeGroupName = cmpAgeGrpName, created_on=cmpAgeGrpD)
+            cmpclass = AgeGroupClass.objects.filter(AgeGroupID=ageID.AgeGroupID).values_list('AgeGroupClassID', flat=True)
+            classes = list(cmpclass)
+            cmpinfo = request.data.pop('CmpData',None)
+            cmptype = code.objects.get(codeName=cmpinfo['cmptype'])
+            cmpRef = competition.objects.get(competitionName = cmpinfo['competitionName'],startDate = cmpinfo['startDate'],competitionType = cmptype.codeID)
+            cmpage = competitionAge.objects.filter(AgeGroupClassID__in = classes,competitionID=cmpRef.competitionID)
+            questionLevelCodeID = request.data.pop('questionLevelCodeID', None)
+            corrMarks = request.data.pop('correctMarks',None)
+            incorrMarks = request.data.pop('incorrectMarks',None)
+            quesLevelRef = code.objects.get(codeName= questionLevelCodeID['codeName']['name'])
+            cmp_marks = ""
+            for i in range(0,len(cmpage)):
+                cmp_marks=competition_MarkScheme.objects.create(competitionAgeID=cmpage[i],questionLevelCodeID=quesLevelRef,correctMarks=corrMarks,incorrectMarks=incorrMarks)
+            return Response(status=200)
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetCompetition(APIView):                                        #Get All main Challenges API
      authentication_classes = (TokenAuthentication, )
      permission_classes = (permissions.IsAuthenticated,)
 
      def get(self,request,**kwargs):
-        codeRef = code.objects.get(codeName='Main Challenge')
-        lists=competition.objects.filter(competitionType = codeRef.codeID)
-        serializer = CompetitionSerializer(lists, many=True)
-        return Response(serializer.data)
+        try:
+            codeRef = code.objects.get(codeName='Main Challenge')
+            lists=competition.objects.filter(competitionType = codeRef.codeID)
+            print(lists)
+            serializer = CompetitionSerializer(lists, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetCompetitionSchoolWise(APIView):                          #Get All Cmp School Wise API
      authentication_classes = (TokenAuthentication, )
      permission_classes = (permissions.IsAuthenticated,)
 
      def get(self,request,**kwargs):
-        schools = school.objects.get(schoolID=kwargs['schoolID'])
-        codeRef = code.objects.get(codeName='Main Challenge')
-        datefield = competition.objects.filter(startDate__year__gte=str(schools.registered_On)[0:4],competitionType=codeRef.codeID)
-        serializer = CompetitionSerializer(datefield, many=True)
-        return Response(serializer.data)
+        try:
+            schools = school.objects.get(schoolID=kwargs['schoolID'])
+            codeRef = code.objects.get(codeName='Main Challenge')
+            datefield = competition.objects.filter(startDate__year__gte=str(schools.registered_On)[0:4],competitionType=codeRef.codeID)
+            serializer = CompetitionSerializer(datefield, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetNotStartedCompetitionSchoolWise(APIView):                #Get All Cmp Not Started
     authentication_classes = (TokenAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self,request,**kwargs):
-        schools = school.objects.get(schoolID=kwargs['schoolID'])
-        codeRef = code.objects.get(codeName='Main Challenge')
-        currentDate = datetime.now()
-        datefield = competition.objects.filter(startDate__year__gte=str(schools.registered_On)[0:4],competitionType=codeRef.codeID,startDate__gte=currentDate)
-        serializer = CompetitionSerializer(datefield, many=True)
-        return Response(serializer.data)
+        try:
+            schools = school.objects.get(schoolID=kwargs['schoolID'])
+            codeRef = code.objects.get(codeName='Main Challenge')
+            currentDate = datetime.now()
+            datefield = competition.objects.filter(startDate__year__gte=str(schools.registered_On)[0:4],competitionType=codeRef.codeID,startDate__gte=currentDate)
+            serializer = CompetitionSerializer(datefield, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetDistinctYears(APIView):                          #Get Distinct Years API
       authentication_classes = (TokenAuthentication, )
       permission_classes = (permissions.IsAuthenticated,)
 
       def get(self,request):
-        lists=competition.objects.dates('startDate','year')
-        return Response({"data":lists})
+        try:
+            lists=competition.objects.dates('startDate','year')
+            return Response({"data":lists})
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetCmpYearWise(APIView):                            #Get Cmp Year Wise API
      authentication_classes = (TokenAuthentication, )
      permission_classes = (permissions.IsAuthenticated,)
 
      def get(self,request,**kwargs):
-        datefield = competition.objects.filter(startDate__year=kwargs['year'])
-        serializer = CompetitionSerializer(datefield, many=True)
-        return Response(serializer.data)
+        try:
+            datefield = competition.objects.filter(startDate__year=kwargs['year'])
+            serializer = CompetitionSerializer(datefield, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetSchoolClassStudents(APIView):                  #Get Students School Class Wise API
+    authentication_classes = (TokenAuthentication, )
+    permission_classes = (permissions.IsAuthenticated,)
+
     def get(self,request,**kwargs):
-        cmpid=kwargs['cmpID']
-        comp= competition.objects.filter(competitionID=cmpid)
-        schclass=schoolClass.objects.filter(schoolClassID=kwargs['schoolClassID'])
-        agegrp=AgeGroupClass.objects.filter(ClassID=schclass[0].classNumber)
-        agegroupclass=[]
-        for i in range(0,len(agegrp)):
-            agegroupclass.append(agegrp[i].AgeGroupClassID)
-        cmpAge= competitionAge.objects.filter(AgeGroupClassID__in=agegroupclass,competitionID=comp[0].competitionID )
-        lists = studentEnrollment.objects.filter(schoolClassID=kwargs['schoolClassID'],competitionAgeID=cmpAge[0].competitionAgeID).exclude(score=999)
-        serializer= studentEnrollmentSerializer(lists,many=True)
-        return Response(serializer.data)
+        try:
+            cmpid=kwargs['cmpID']
+            comp= competition.objects.filter(competitionID=cmpid)
+            schclass=schoolClass.objects.filter(schoolClassID=kwargs['schoolClassID'])
+            agegrp=AgeGroupClass.objects.filter(ClassID=schclass[0].classNumber)
+            agegroupclass=[]
+            for i in range(0,len(agegrp)):
+                agegroupclass.append(agegrp[i].AgeGroupClassID)
+            cmpAge= competitionAge.objects.filter(AgeGroupClassID__in=agegroupclass,competitionID=comp[0].competitionID )
+            lists = studentEnrollment.objects.filter(schoolClassID=kwargs['schoolClassID'],competitionAgeID=cmpAge[0].competitionAgeID).exclude(score=999)
+            serializer= studentEnrollmentSerializer(lists,many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetSchoolStudentsCmpWise(APIView):                  #Get SchoolStudent Cmp wise API
      authentication_classes = (TokenAuthentication, )
      permission_classes = (permissions.IsAuthenticated,)
 
      def get(self,request,**kwargs):
-        cmpid = kwargs['cmpID']
-        schoolclasses=schoolClass.objects.filter(schoolID=kwargs['schoolID'])
-        schclasses=[]
-        for i in range(0, len(schoolclasses)):
-            schclasses.append(schoolclasses[i].schoolClassID)
-        comp = competition.objects.filter(competitionID=cmpid)
-        compAge = competitionAge.objects.filter(competitionID=comp[0].competitionID)
-        cmpAgeID=[]
-        for i in range(0,len(compAge)):
-             cmpAgeID.append(compAge[i].competitionAgeID)
-        lists = studentEnrollment.objects.filter(competitionAgeID__in=cmpAgeID,schoolClassID__in=schclasses)
-        paginator = CustomPagination()
-        response = paginator.generate_response(lists,studentEnrollmentSerializer,request)
-        return Response(response.data)
+        try:
+            cmpid = kwargs['cmpID']
+            schoolclasses=schoolClass.objects.filter(schoolID=kwargs['schoolID'])
+            schclasses=[]
+            for i in range(0, len(schoolclasses)):
+                schclasses.append(schoolclasses[i].schoolClassID)
+            comp = competition.objects.filter(competitionID=cmpid)
+            compAge = competitionAge.objects.filter(competitionID=comp[0].competitionID)
+            cmpAgeID=[]
+            for i in range(0,len(compAge)):
+                 cmpAgeID.append(compAge[i].competitionAgeID)
+            lists = studentEnrollment.objects.filter(competitionAgeID__in=cmpAgeID,schoolClassID__in=schclasses)
+            paginator = CustomPagination()
+            response = paginator.generate_response(lists,studentEnrollmentSerializer,request)
+            return Response(response.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetSchoolStudentsDetailCmpWise(APIView):                  #Get SchoolStudent Detail Cmp wise API
      authentication_classes = (TokenAuthentication, )
      permission_classes = (permissions.IsAuthenticated,)
 
      def get(self,request,**kwargs):
-        cmpid = kwargs['cmpID']
-        schoolclasses=schoolClass.objects.filter(schoolID=kwargs['schoolID'])
-        schclasses=[]
-        for i in range(0, len(schoolclasses)):
-            schclasses.append(schoolclasses[i].schoolClassID)
-        comp = competition.objects.filter(competitionID=cmpid)
-        compAge = competitionAge.objects.filter(competitionID=comp[0].competitionID)
-        cmpAgeID=[]
-        for i in range(0,len(compAge)):
-             cmpAgeID.append(compAge[i].competitionAgeID)
-        lists = studentEnrollment.objects.filter(competitionAgeID__in=cmpAgeID,schoolClassID__in=schclasses)
-        paginator = CustomPagination()
-        response = paginator.generate_response(lists,studentEnrollmentSerializer,request)
-        userRoleId = []
-        for i in range(0,len(response.data['results'])):
-            userRoleId.append(response.data['results'][i]['userID']['userID'])
-            lists = UserRole.objects.filter(userID__in=userRoleId)
+        try:
+            cmpid = kwargs['cmpID']
+            schoolclasses=schoolClass.objects.filter(schoolID=kwargs['schoolID'])
+            schclasses=[]
+            for i in range(0, len(schoolclasses)):
+                schclasses.append(schoolclasses[i].schoolClassID)
+            comp = competition.objects.filter(competitionID=cmpid)
+            compAge = competitionAge.objects.filter(competitionID=comp[0].competitionID)
+            cmpAgeID=[]
+            for i in range(0,len(compAge)):
+                 cmpAgeID.append(compAge[i].competitionAgeID)
+            lists = studentEnrollment.objects.filter(competitionAgeID__in=cmpAgeID,schoolClassID__in=schclasses)
+            paginator = CustomPagination()
+            response = paginator.generate_response(lists,studentEnrollmentSerializer,request)
+            userRoleId = []
+            print(response.data)
+            if len(response.data) != 0:
+                for i in range(0,len(response.data['results'])):
+                    userRoleId.append(response.data['results'][i]['userID']['userID'])
+                    lists = UserRole.objects.filter(userID__in=userRoleId)
             serializer = UserRoleSerializer(lists,many=True)
-        return Response({
-            "StudData":response.data,
-            "RoleData":serializer.data
-        })
+            return Response({
+                "StudData":response.data,
+                "RoleData":serializer.data
+            })
+        except Exception as e:
+            return Response(e,status=500)
 
 
 class DownloadSchoolStudentsCmpWise(APIView):                          #Download SchoolStudents Cmp wise
@@ -388,19 +441,22 @@ class DownloadSchoolStudentsCmpWise(APIView):                          #Download
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self,request,**kwargs):
-        cmpid = kwargs['cmpID']
-        schoolclasses=schoolClass.objects.filter(schoolID=kwargs['schoolID'])
-        schclasses=[]
-        for i in range(0, len(schoolclasses)):
-            schclasses.append(schoolclasses[i].schoolClassID)
-        comp = competition.objects.filter(competitionID=cmpid)
-        compAge = competitionAge.objects.filter(competitionID=comp[0].competitionID)
-        cmpAgeID=[]
-        for i in range(0,len(compAge)):
-             cmpAgeID.append(compAge[i].competitionAgeID)
-        lists = studentEnrollment.objects.filter(competitionAgeID__in=cmpAgeID,schoolClassID__in=schclasses)
-        serializer= studentEnrollmentSerializer(lists,many=True)
-        return Response(serializer.data)
+        try:
+            cmpid = kwargs['cmpID']
+            schoolclasses=schoolClass.objects.filter(schoolID=kwargs['schoolID'])
+            schclasses=[]
+            for i in range(0, len(schoolclasses)):
+                schclasses.append(schoolclasses[i].schoolClassID)
+            comp = competition.objects.filter(competitionID=cmpid)
+            compAge = competitionAge.objects.filter(competitionID=comp[0].competitionID)
+            cmpAgeID=[]
+            for i in range(0,len(compAge)):
+                 cmpAgeID.append(compAge[i].competitionAgeID)
+            lists = studentEnrollment.objects.filter(competitionAgeID__in=cmpAgeID,schoolClassID__in=schclasses)
+            serializer= studentEnrollmentSerializer(lists,many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 
 class GetStudentsAgeGroupWise(APIView):            #Get Students AgeGrpWise API
@@ -408,171 +464,208 @@ class GetStudentsAgeGroupWise(APIView):            #Get Students AgeGrpWise API
      permission_classes = (permissions.IsAuthenticated,)
 
      def get(self,request,**kwargs):
-        agegrpclasses=AgeGroupClass.objects.filter(AgeGroupID=kwargs['AgeID'])
-        agegroupclasses=[]
-        for i in range(0,len(agegrpclasses)):
-            agegroupclasses.append(agegrpclasses[i].AgeGroupClassID)
-        cmpage=competitionAge.objects.filter(AgeGroupClassID__in= agegroupclasses,competitionID=kwargs['cmpID'])
-        cmpages=[]
-        for i in range(0, len(cmpage)):
-            cmpages.append(cmpage[i].competitionAgeID)
-        schoolclasses = schoolClass.objects.filter(schoolID=kwargs['schoolID'])
-        schclasses = []
-        for i in range(0, len(schoolclasses)):
-            schclasses.append(schoolclasses[i].schoolClassID)
-        lists = studentEnrollment.objects.filter(competitionAgeID__in =cmpages,schoolClassID__in=schclasses)
-        serializers=studentEnrollmentSerializer(lists,many=True)
-        return Response(serializers.data)
+        try:
+            agegrpclasses=AgeGroupClass.objects.filter(AgeGroupID=kwargs['AgeID'])
+            agegroupclasses=[]
+            for i in range(0,len(agegrpclasses)):
+                agegroupclasses.append(agegrpclasses[i].AgeGroupClassID)
+            cmpage=competitionAge.objects.filter(AgeGroupClassID__in= agegroupclasses,competitionID=kwargs['cmpID'])
+            cmpages=[]
+            for i in range(0, len(cmpage)):
+                cmpages.append(cmpage[i].competitionAgeID)
+            schoolclasses = schoolClass.objects.filter(schoolID=kwargs['schoolID'])
+            schclasses = []
+            for i in range(0, len(schoolclasses)):
+                schclasses.append(schoolclasses[i].schoolClassID)
+            lists = studentEnrollment.objects.filter(competitionAgeID__in =cmpages,schoolClassID__in=schclasses)
+            serializers=studentEnrollmentSerializer(lists,many=True)
+            return Response(serializers.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetStudentsAgeGroupWiseToppers(APIView):                    #Get Toppers AgeGrpWise API
      authentication_classes = (TokenAuthentication, )
      permission_classes = (permissions.IsAuthenticated,)
 
      def get(self,request,**kwargs):
-        agegrpclasses=AgeGroupClass.objects.filter(AgeGroupID=kwargs['AgeID'])
-        agegroupclasses=[]
-        for i in range(0,len(agegrpclasses)):
-            agegroupclasses.append(agegrpclasses[i].AgeGroupClassID)
-        cmpage=competitionAge.objects.filter(AgeGroupClassID__in= agegroupclasses,competitionID=kwargs['cmpID'])
-        cmpages=[]
-        for i in range(0, len(cmpage)):
-            cmpages.append(cmpage[i].competitionAgeID)
-        schoolclasses = schoolClass.objects.filter(schoolID=kwargs['schoolID'])
-        schclasses = []
-        for i in range(0, len(schoolclasses)):
-            schclasses.append(schoolclasses[i].schoolClassID)
-        lists = studentEnrollment.objects.filter(competitionAgeID__in =cmpages,schoolClassID__in=schclasses).exclude(score=999)
-        data = []
-        lists1 = []
-        if len(lists)>0:
-            for i in range(0,len(lists)):
-                data.append({ 'score': lists[i].score,
-                              'time': lists[i].timeTaken,
-                              'userID': lists[i].studentEnrollmentID})
-            data = sorted(data, key=itemgetter('score', 'time'))
-            data = sorted(data, key=lambda k: (-k['score'], k['time']))
-            if len(data) >= 3:
-                for i in range(0,3):
-                    lists1.append(data[i]['userID'])
-            else:
-                 for i in range(0,len(data)):
-                    lists1.append(data[i]['userID'])
-            lists = studentEnrollment.objects.filter(studentEnrollmentID__in=lists1)
-        serializer = studentEnrollmentSerializer(lists, many=True)
-        return Response(serializer.data)
+        try:
+            agegrpclasses=AgeGroupClass.objects.filter(AgeGroupID=kwargs['AgeID'])
+            agegroupclasses=[]
+            for i in range(0,len(agegrpclasses)):
+                agegroupclasses.append(agegrpclasses[i].AgeGroupClassID)
+            cmpage=competitionAge.objects.filter(AgeGroupClassID__in= agegroupclasses,competitionID=kwargs['cmpID'])
+            cmpages=[]
+            for i in range(0, len(cmpage)):
+                cmpages.append(cmpage[i].competitionAgeID)
+            schoolclasses = schoolClass.objects.filter(schoolID=kwargs['schoolID'])
+            schclasses = []
+            for i in range(0, len(schoolclasses)):
+                schclasses.append(schoolclasses[i].schoolClassID)
+            lists = studentEnrollment.objects.filter(competitionAgeID__in =cmpages,schoolClassID__in=schclasses).exclude(score=999)
+            data = []
+            lists1 = []
+            if len(lists)>0:
+                for i in range(0,len(lists)):
+                    data.append({ 'score': lists[i].score,
+                                  'time': lists[i].timeTaken,
+                                  'userID': lists[i].studentEnrollmentID})
+                data = sorted(data, key=itemgetter('score', 'time'))
+                data = sorted(data, key=lambda k: (-k['score'], k['time']))
+                if len(data) >= 3:
+                    for i in range(0,3):
+                        lists1.append(data[i]['userID'])
+                else:
+                     for i in range(0,len(data)):
+                        lists1.append(data[i]['userID'])
+                lists = studentEnrollment.objects.filter(studentEnrollmentID__in=lists1)
+            serializer = studentEnrollmentSerializer(lists, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetAllStudentsSchoolWise(APIView):                           #Get Students SchoolWise API
      authentication_classes = (TokenAuthentication, )
      permission_classes = (permissions.IsAuthenticated,)
 
      def get(self,request,**kwargs):
-        sch=school.objects.filter(schoolID=kwargs['schoolID'])
-        schclasses=schoolClass.objects.filter(schoolID=sch[0].schoolID)
-        classes=[]
-        for i in range(0,len(schclasses)):
-            classes.append(schclasses[i].schoolClassID)
-        students=studentEnrollment.objects.filter(schoolClassID__in=classes)
-        serializers=studentEnrollmentSerializer(students,many=True)
-        return Response(serializers.data)
+        try:
+            sch=school.objects.filter(schoolID=kwargs['schoolID'])
+            schclasses=schoolClass.objects.filter(schoolID=sch[0].schoolID)
+            classes=[]
+            for i in range(0,len(schclasses)):
+                classes.append(schclasses[i].schoolClassID)
+            students=studentEnrollment.objects.filter(schoolClassID__in=classes)
+            serializers=studentEnrollmentSerializer(students,many=True)
+            return Response(serializers.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class UpdateQuestionView(APIView):                         #Update Question API
      authentication_classes = (TokenAuthentication, )
      permission_classes = (permissions.IsAuthenticated,)
 
      def post(self, request, **kwargs):
-        id = correctOption.objects.get(questionTranslationID=kwargs['questionTranslationID'])
-        serializers = UpdateQuestions(instance=id, data=request.data, partial=True)
-        serializers.is_valid(raise_exception=True)
-        serializers.save()
-        return Response(serializers.data)
+        try:
+            id = correctOption.objects.get(questionTranslationID=kwargs['questionTranslationID'])
+            serializers = UpdateQuestions(instance=id, data=request.data, partial=True)
+            serializers.is_valid(raise_exception=True)
+            serializers.save()
+            return Response(serializers.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class InsertAgeGrpView(APIView):                         #Insert new AgGrp API
      authentication_classes = (TokenAuthentication, )
      permission_classes = (permissions.IsAuthenticated,)
 
      def post(self, request, **kwargs):
-        serializer = AgeGroupClassSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(status=200)
+        try:
+            serializer = AgeGroupClassSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(status=200)
+        except Exception as e:
+            return Response(e,status=500)
 
 class InsertCompetition(APIView):                          #Insert new Cmp API
      authentication_classes = (TokenAuthentication, )
      permission_classes = (permissions.IsAuthenticated,)
 
      def post(self, request, **kwargs):
-        serializer = CompetitionAgeSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(status=200)
+        try:
+            serializer = CompetitionAgeSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(status=200)
+        except Exception as e:
+            return Response(e,status=500)
 
 class InsertCmpQues(APIView):                             #Insert new CmpQuestion API
      authentication_classes = (TokenAuthentication, )
      permission_classes = (permissions.IsAuthenticated,)
 
      def post(self, request, **kwargs):
-        AgeID = request.data.pop('AgeGroupID',None)
-        AgeClassRef = AgeGroupClass.objects.filter(AgeGroupID=AgeID)
-        cmpAgeList = []
-        for i in range(0,len(AgeClassRef)):
-            cmpAgeList.append(AgeClassRef[i].AgeGroupClassID)
-        codeRef = code.objects.get(codeName=request.data.pop('cmptype',None))
-        CmpRef = competition.objects.get(competitionName = request.data.pop('competitionName',None),startDate = request.data.pop('startdate',None),competitionType =codeRef.codeID )
-        CmpAgeRef = competitionAge.objects.filter(AgeGroupClassID__in = cmpAgeList,competitionID=CmpRef)
-        quesIDList = request.data.pop('quesList',None)
-        for i in range(0,len(quesIDList)):
-            LevelcodeRef = code.objects.get(codeName=quesIDList[i]['questionLevelCodeID'])
-            for j in range(0,len(CmpAgeRef)):
-                t = {
-                    "competitionAgeID":CmpAgeRef[j].competitionAgeID,
-                    "questionID":quesIDList[i]['questionID'],
-                    "questionLevelCodeID":LevelcodeRef.codeID
-                }
-                serializer = CompetitionQuestionSerializer(data=collections.OrderedDict(t))
-                serializer.is_valid(raise_exception=True)
-                serializer.save()
-        return Response(status=200)
+        try:
+            AgeID = request.data.pop('AgeGroupID',None)
+            AgeClassRef = AgeGroupClass.objects.filter(AgeGroupID=AgeID)
+            cmpAgeList = []
+            for i in range(0,len(AgeClassRef)):
+                cmpAgeList.append(AgeClassRef[i].AgeGroupClassID)
+            codeRef = code.objects.get(codeName=request.data.pop('cmptype',None))
+            CmpRef = competition.objects.get(competitionName = request.data.pop('competitionName',None),startDate = request.data.pop('startdate',None),competitionType =codeRef.codeID )
+            CmpAgeRef = competitionAge.objects.filter(AgeGroupClassID__in = cmpAgeList,competitionID=CmpRef)
+            quesIDList = request.data.pop('quesList',None)
+            for i in range(0,len(quesIDList)):
+                LevelcodeRef = code.objects.get(codeName=quesIDList[i]['questionLevelCodeID'])
+                for j in range(0,len(CmpAgeRef)):
+                    t = {
+                        "competitionAgeID":CmpAgeRef[j].competitionAgeID,
+                        "questionID":quesIDList[i]['questionID'],
+                        "questionLevelCodeID":LevelcodeRef.codeID
+                    }
+                    serializer = CompetitionQuestionSerializer(data=collections.OrderedDict(t))
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save()
+            return Response(status=200)
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetquesAge(APIView):                              #Get Ques from QuestionAge not slected in API
      authentication_classes = (TokenAuthentication, )
      permission_classes = (permissions.IsAuthenticated,)
 
      def get(self,request,**kwargs):
-        ageid = kwargs['AgeID']
-        AgeGrp =AgeGroup.objects.get(AgeGroupID =ageid)
-        agename = AgeGrp.AgeGroupName.split('-')
-        lists = QuestionAge.objects.filter(AgeGroupID=ageid)
-        serializers=QuestionAgeSerializer(lists,many=True)
-        quesList = []
-        for i in range(0,len(lists)):
-            quesList.append(lists[i].questionID)
-        ageclass = AgeGroupClass.objects.filter(AgeGroupID=ageid)
-        ageGrpclass = []
-        for i in range(0,len(ageclass)):
-            ageGrpclass.append(ageclass[i].AgeGroupClassID)
-        cmpage = competitionAge.objects.filter(AgeGroupClassID__in = ageGrpclass,competitionID=kwargs['cmpID'])
-        cmpAge = []
-        for i in range(0,len(cmpage)):
-            cmpAge.append(cmpage[i].competitionAgeID)
-        cmpques = competitionQuestion.objects.filter(competitionAgeID__in = cmpAge)
-        cmpQues = []
-        for i in range(0,len(cmpques)):
-            cmpQues.append(cmpques[i].questionID)
-        languageRef = code.objects.get(codeName = agename[1])
-        quesTransList = questionTranslation.objects.filter(questionID__in =quesList,languageCodeID = languageRef.codeID).exclude(questionID__in = cmpQues)
-        serializers1 = GetTranslatedQuestion(quesTransList,many=True)
-        return Response({"QuesAge" :serializers.data,
-                         "QuesTrans" : serializers1.data})
+        try:
+            ageid = kwargs['AgeID']
+            AgeGrp =AgeGroup.objects.get(AgeGroupID =ageid)
+            agename = AgeGrp.AgeGroupName.split('-')
+            ageclass = AgeGroupClass.objects.filter(AgeGroupID=ageid)
+            ageGrpclass = []
+            for i in range(0,len(ageclass)):
+                ageGrpclass.append(ageclass[i].AgeGroupClassID)
+            cmpage = competitionAge.objects.filter(AgeGroupClassID__in = ageGrpclass,competitionID=kwargs['cmpID'])
+            cmpAge = []
+            for i in range(0,len(cmpage)):
+                cmpAge.append(cmpage[i].competitionAgeID)
+            cmpques = competitionQuestion.objects.filter(competitionAgeID__in = cmpAge)
+            cmpQues = []
+            for i in range(0,len(cmpques)):
+                cmpQues.append(cmpques[i].questionID)
+            languageRef = code.objects.get(codeName = agename[1])
+            lists = QuestionAge.objects.filter(AgeGroupID=ageid).exclude(questionID__in = cmpQues)
+            serializers=QuestionAgeSerializer(lists,many=True)
+            quesList = []
+            for i in range(0,len(lists)):
+                quesList.append(lists[i].questionID)
+            quesTransList = questionTranslation.objects.filter(questionID__in =quesList,languageCodeID = languageRef.codeID).exclude(questionID__in = cmpQues).values_list('questionTranslationID', flat=True)
+            query= correctOption.objects.filter(questionTranslationID__in = list(quesTransList))
+            serializer1 = GetCorrectOption(query,many=True)
+            finalQues = questionTranslation.objects.filter(questionID__in =quesList,languageCodeID = languageRef.codeID).exclude(questionID__in = cmpQues).values_list('questionID', flat=True)
+            finalQuesID = list(finalQues)
+            opts = option.objects.filter(questionID__in=finalQuesID).values_list('optionID', flat=True)
+            optList = list(opts)
+            langCodes = questionTranslation.objects.filter(questionID__in =quesList,languageCodeID = languageRef.codeID).exclude(questionID__in = cmpQues).values_list('languageCodeID', flat=True)
+            lang = list(langCodes)
+            optTrans = optionTranslation.objects.filter(optionID__in=optList,languageCodeID__in = lang)
+            serializerF = GetAllTranslatedOptions(optTrans,many=True)
+            return Response({"QuesAge" :serializers.data,
+                             "Questions" : serializer1.data,
+                             "Options" : serializerF.data})
+        except Exception as e:
+            return Response(e,status=500)
 
 class InsertOnlyCmpAge(APIView):                             #Insert new agegrp in cmp API
      authentication_classes = (TokenAuthentication, )
      permission_classes = (permissions.IsAuthenticated,)
 
      def post(self, request, **kwargs):
-        serializer = CompetitionAgeOnlySerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(status=200)
+        try:
+            serializer = CompetitionAgeOnlySerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(status=200)
+        except Exception as e:
+            return Response(e,status=500)
 
 
 class UpdateCmp(APIView):                         #Update Cmp API
@@ -580,38 +673,41 @@ class UpdateCmp(APIView):                         #Update Cmp API
      permission_classes = (permissions.IsAuthenticated,)
 
      def post(self, request, **kwargs):
-        cmp_data = request.data.pop('CompetitionData')
-        cmp_instance = competition.objects.get(competitionID = request.data.pop('CompetitionID'))
-        serializer = CompetitionSerializer(instance=cmp_instance, data=cmp_data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        agedata = request.data.pop('agedata')
-        ageRef = AgeGroup.objects.get(AgeGroupID = agedata['ageid'],AgeGroupName=agedata['agename'])
-        ageclass = AgeGroupClass.objects.filter(AgeGroupID=ageRef.AgeGroupID)
-        ageGrpclass = []
-        for i in range(0,len(ageclass)):
-            ageGrpclass.append(ageclass[i].AgeGroupClassID)
-        cmpage = competitionAge.objects.filter(AgeGroupClassID__in = ageGrpclass,competitionID=cmp_instance.competitionID)
-        cmpAge = []
-        for i in range(0,len(cmpage)):
-            cmpAge.append(cmpage[i].competitionAgeID)
-        deleted_data = request.data.pop('DeletedData')
-        for i in range(0,len(deleted_data)):
-            LevelcodeRef = code.objects.get(codeName=deleted_data[i]['questionLevelCodeID'])
-            for j in range(0,len(cmpage)):
-                res = competitionQuestion.objects.filter(competitionAgeID = cmpage[j].competitionAgeID,questionID = deleted_data[i]['questionID'],questionLevelCodeID = LevelcodeRef.codeID).exists()
-                if res == True:
-                    result =competitionQuestion.objects.filter(competitionAgeID = cmpage[j].competitionAgeID,questionID = deleted_data[i]['questionID'],questionLevelCodeID = LevelcodeRef.codeID)
-                    result[0].delete()
-        cmpQuesList = competitionQuestion.objects.filter(competitionAgeID__in = cmpAge)
-        cmpques_data = request.data.pop('CmpQuesData')
-        if len(cmpques_data)>0:
-            for i in range(0,len(cmpques_data)):
-                LevelcodeRef = code.objects.get(codeName=cmpques_data[i]['questionLevelCodeID'])
-                quesRef = question.objects.get(questionID = cmpques_data[i]['questionID'])
+        try:
+            cmp_data = request.data.pop('CompetitionData')
+            cmp_instance = competition.objects.get(competitionID = request.data.pop('CompetitionID'))
+            serializer = CompetitionSerializer(instance=cmp_instance, data=cmp_data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            agedata = request.data.pop('agedata')
+            ageRef = AgeGroup.objects.get(AgeGroupID = agedata['ageid'],AgeGroupName=agedata['agename'])
+            ageclass = AgeGroupClass.objects.filter(AgeGroupID=ageRef.AgeGroupID)
+            ageGrpclass = []
+            for i in range(0,len(ageclass)):
+                ageGrpclass.append(ageclass[i].AgeGroupClassID)
+            cmpage = competitionAge.objects.filter(AgeGroupClassID__in = ageGrpclass,competitionID=cmp_instance.competitionID)
+            cmpAge = []
+            for i in range(0,len(cmpage)):
+                cmpAge.append(cmpage[i].competitionAgeID)
+            deleted_data = request.data.pop('DeletedData')
+            for i in range(0,len(deleted_data)):
+                LevelcodeRef = code.objects.get(codeName=deleted_data[i]['questionLevelCodeID'])
                 for j in range(0,len(cmpage)):
-                    competitionQuestion.objects.create(competitionAgeID=cmpage[j],questionID=quesRef,questionLevelCodeID=LevelcodeRef)
-        return Response(status=200)
+                    res = competitionQuestion.objects.filter(competitionAgeID = cmpage[j].competitionAgeID,questionID = deleted_data[i]['questionID'],questionLevelCodeID = LevelcodeRef.codeID).exists()
+                    if res == True:
+                        result =competitionQuestion.objects.filter(competitionAgeID = cmpage[j].competitionAgeID,questionID = deleted_data[i]['questionID'],questionLevelCodeID = LevelcodeRef.codeID)
+                        result[0].delete()
+            cmpQuesList = competitionQuestion.objects.filter(competitionAgeID__in = cmpAge)
+            cmpques_data = request.data.pop('CmpQuesData')
+            if len(cmpques_data)>0:
+                for i in range(0,len(cmpques_data)):
+                    LevelcodeRef = code.objects.get(codeName=cmpques_data[i]['questionLevelCodeID'])
+                    quesRef = question.objects.get(questionID = cmpques_data[i]['questionID'])
+                    for j in range(0,len(cmpage)):
+                        competitionQuestion.objects.create(competitionAgeID=cmpage[j],questionID=quesRef,questionLevelCodeID=LevelcodeRef)
+            return Response(status=200)
+        except Exception as e:
+            return Response(e,status=500)
 
 
 class GetcmpQues(APIView):                       #Get Cmp Question API
@@ -619,33 +715,39 @@ class GetcmpQues(APIView):                       #Get Cmp Question API
      permission_classes = (permissions.IsAuthenticated,)
 
      def get(self,request,**kwargs):
-        ageRef = AgeGroup.objects.get(AgeGroupID = kwargs['AgeID'])
-        ageclass = AgeGroupClass.objects.filter(AgeGroupID=ageRef.AgeGroupID)
-        agename =ageRef.AgeGroupName.split('-')
-        ageGrpclass = []
-        for i in range(0,len(ageclass)):
-            ageGrpclass.append(ageclass[i].AgeGroupClassID)
-        cmpage = competitionAge.objects.filter(AgeGroupClassID__in = ageGrpclass,competitionID=kwargs['cmpID'])
-        cmpQuesList = competitionQuestion.objects.filter(competitionAgeID=cmpage[0].competitionAgeID)
-        serializers = CmpQuesSerializer(cmpQuesList,many=True)
-        quesList = []
-        for i in range(0,len(cmpQuesList)):
-            quesList.append(cmpQuesList[i].questionID)
-        languageRef = code.objects.get(codeName = agename[1])
-        quesTransList = questionTranslation.objects.filter(questionID__in =quesList,languageCodeID = languageRef.codeID)
-        serializers1 = GetTranslatedQuestion(quesTransList,many=True)
-        return Response({"cmpQuesList":serializers.data,
-                         "QuesTrans":serializers1.data})
+        try:
+            ageRef = AgeGroup.objects.get(AgeGroupID = kwargs['AgeID'])
+            ageclass = AgeGroupClass.objects.filter(AgeGroupID=ageRef.AgeGroupID)
+            agename =ageRef.AgeGroupName.split('-')
+            ageGrpclass = []
+            for i in range(0,len(ageclass)):
+                ageGrpclass.append(ageclass[i].AgeGroupClassID)
+            cmpage = competitionAge.objects.filter(AgeGroupClassID__in = ageGrpclass,competitionID=kwargs['cmpID'])
+            cmpQuesList = competitionQuestion.objects.filter(competitionAgeID=cmpage[0].competitionAgeID)
+            serializers = CmpQuesSerializer(cmpQuesList,many=True)
+            quesList = []
+            for i in range(0,len(cmpQuesList)):
+                quesList.append(cmpQuesList[i].questionID)
+            languageRef = code.objects.get(codeName = agename[1])
+            quesTransList = questionTranslation.objects.filter(questionID__in =quesList,languageCodeID = languageRef.codeID)
+            serializers1 = GetTranslatedQuestion(quesTransList,many=True)
+            return Response({"cmpQuesList":serializers.data,
+                             "QuesTrans":serializers1.data})
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetClassAgeGrpWise(APIView):                    #Get Classes AgeGrpWise API
      authentication_classes = (TokenAuthentication, )
      permission_classes = (permissions.IsAuthenticated,)
 
      def get(self,request,**kwargs):
-        ageRef = AgeGroup.objects.get(AgeGroupID=kwargs['AgeID'])
-        AgeClassList = AgeGroupClass.objects.filter(AgeGroupID=ageRef.AgeGroupID)
-        serializers = AgeGroupClassSerializer(AgeClassList,many=True)
-        return Response(serializers.data)
+        try:
+            ageRef = AgeGroup.objects.get(AgeGroupID=kwargs['AgeID'])
+            AgeClassList = AgeGroupClass.objects.filter(AgeGroupID=ageRef.AgeGroupID)
+            serializers = AgeGroupClassSerializer(AgeClassList,many=True)
+            return Response(serializers.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 
 class GetAgeGrpCmpWise(APIView):                    #Get AgeGrp  CmpWise API
@@ -653,79 +755,101 @@ class GetAgeGrpCmpWise(APIView):                    #Get AgeGrp  CmpWise API
      permission_classes = (permissions.IsAuthenticated,)
 
      def get(self,request,**kwargs):
-        cmpageList = competitionAge.objects.filter(competitionID=kwargs['cmpID']).values('AgeGroupClassID').distinct()
-        AgeclassList = []
-        for i in range(0,len(cmpageList)):
-            AgeclassList.append(cmpageList[i]['AgeGroupClassID'])
-        ageclassList = AgeGroupClass.objects.filter(AgeGroupClassID__in = AgeclassList).values('AgeGroupID').distinct()
-        AgeGrpList = []
-        for i in range(0,len(ageclassList)):
-            AgeGrpList.append(ageclassList[i]['AgeGroupID'])
-        ageGrpList = AgeGroup.objects.filter(AgeGroupID__in=AgeGrpList)
-        serializers = GetAgeGroupsid(ageGrpList,many=True)
-        bonus = []
-        for i in range(0,len(serializers.data)):
-            ageclassRef= AgeGroupClass.objects.filter(AgeGroupID=serializers.data[i]['AgeGroupID'])
-            cmpageRef = competitionAge.objects.filter(AgeGroupClassID = ageclassRef[0].AgeGroupClassID,competitionID=kwargs['cmpID'])
-            bonus.append(cmpageRef[0].defaultBonusMarks)
-        return Response({"AgeGrp":serializers.data,
-                         "BonusList":bonus})
+        try:
+            cmpageList = competitionAge.objects.filter(competitionID=kwargs['cmpID']).values('AgeGroupClassID').distinct()
+            AgeclassList = []
+            for i in range(0,len(cmpageList)):
+                AgeclassList.append(cmpageList[i]['AgeGroupClassID'])
+            ageclassList = AgeGroupClass.objects.filter(AgeGroupClassID__in = AgeclassList).values('AgeGroupID').distinct()
+            AgeGrpList = []
+            for i in range(0,len(ageclassList)):
+                AgeGrpList.append(ageclassList[i]['AgeGroupID'])
+            ageGrpList = AgeGroup.objects.filter(AgeGroupID__in=AgeGrpList)
+            serializers = GetAgeGroupsid(ageGrpList,many=True)
+            bonus = []
+            for i in range(0,len(serializers.data)):
+                ageclassRef= AgeGroupClass.objects.filter(AgeGroupID=serializers.data[i]['AgeGroupID'])
+                cmpageRef = competitionAge.objects.filter(AgeGroupClassID = ageclassRef[0].AgeGroupClassID,competitionID=kwargs['cmpID'])
+                bonus.append(cmpageRef[0].defaultBonusMarks)
+            return Response({"AgeGrp":serializers.data,
+                             "BonusList":bonus})
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetMarksAgeWise(APIView):                     #Get AgeGrpWise markingScheme API
      authentication_classes = (TokenAuthentication, )
      permission_classes = (permissions.IsAuthenticated,)
 
      def get(self,request,**kwargs):
-        ageclass = AgeGroupClass.objects.filter(AgeGroupID=kwargs['AgeID'])
-        cmpage = competitionAge.objects.filter(AgeGroupClassID=ageclass[0].AgeGroupClassID,competitionID=kwargs['cmpID'])
-        Marks = competition_MarkScheme.objects.filter(competitionAgeID=cmpage[0].competitionAgeID)
-        serializers = MarkingSchemeSerializer(Marks,many=True)
-        return Response(serializers.data)
+        try:
+            ageclass = AgeGroupClass.objects.filter(AgeGroupID=kwargs['AgeID'])
+            cmpage = competitionAge.objects.filter(AgeGroupClassID=ageclass[0].AgeGroupClassID,competitionID=kwargs['cmpID'])
+            Marks = competition_MarkScheme.objects.filter(competitionAgeID=cmpage[0].competitionAgeID)
+            serializers = MarkingSchemeSerializer(Marks,many=True)
+            return Response(serializers.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class UpdateMarkingScheme(APIView):                    #Update markig Scheme API
      authentication_classes = (TokenAuthentication, )
      permission_classes = (permissions.IsAuthenticated,)
 
      def post(self, request, **kwargs):
-         ageclass = AgeGroupClass.objects.filter(AgeGroupID = request.data.pop('AgeID'))
-         classID =[]
-         for i in range(0,len(ageclass)):
-             classID.append(ageclass[i].AgeGroupClassID)
-         cmpage = competitionAge.objects.filter(AgeGroupClassID__in = classID,competitionID = request.data.pop('competitionID'))
-         levelRef = code.objects.get(codeName = request.data.get('queslevelcode'))
-         for i in range(0,len(cmpage)):
-             instance = competition_MarkScheme.objects.get(competitionAgeID=cmpage[i].competitionAgeID,questionLevelCodeID=levelRef.codeID)
-             t = {
-                 "competitionAgeID":cmpage[i].competitionAgeID,
-                 "questionLevelCodeID":{
-                     "codeName":request.data.get('queslevelcode')
-                 },
-                 "correctMarks":request.data.get('corrMarks'),
-                 "incorrectMarks":request.data.get('incorrMarks')
-             }
-             serializers = MarkingSchemeSerializer(instance=instance, data=collections.OrderedDict(t), partial=True)
-             serializers.is_valid(raise_exception=True)
-             serializers.save()
-         return Response(status=200)
+         try:
+             ageclass = AgeGroupClass.objects.filter(AgeGroupID = request.data.pop('AgeID'))
+             classID =[]
+             for i in range(0,len(ageclass)):
+                 classID.append(ageclass[i].AgeGroupClassID)
+             cmpage = competitionAge.objects.filter(AgeGroupClassID__in = classID,competitionID = request.data.pop('competitionID'))
+             levelRef = code.objects.get(codeName = request.data.get('queslevelcode'))
+             for i in range(0,len(cmpage)):
+                 instance = competition_MarkScheme.objects.get(competitionAgeID=cmpage[i].competitionAgeID,questionLevelCodeID=levelRef.codeID)
+                 t = {
+                     "competitionAgeID":cmpage[i].competitionAgeID,
+                     "questionLevelCodeID":{
+                         "codeName":request.data.get('queslevelcode')
+                     },
+                     "correctMarks":request.data.get('corrMarks'),
+                     "incorrectMarks":request.data.get('incorrMarks')
+                 }
+                 serializers = MarkingSchemeSerializer(instance=instance, data=collections.OrderedDict(t), partial=True)
+                 serializers.is_valid(raise_exception=True)
+                 serializers.save()
+             return Response(status=200)
+         except Exception as e:
+            return Response(e,status=500)
 
 class GetquesAgeAll(APIView):                       #Get Questionsfrom QuesAge AgeGrpwise API
      authentication_classes = (TokenAuthentication, )
      permission_classes = (permissions.IsAuthenticated,)
 
      def get(self,request,**kwargs):
-        ageid = kwargs['AgeID']
-        AgeGrp =AgeGroup.objects.get(AgeGroupID =ageid)
-        agename = AgeGrp.AgeGroupName.split('-')
-        lists = QuestionAge.objects.filter(AgeGroupID=ageid)
-        serializers=QuestionAgeSerializer(lists,many=True)
-        quesList = []
-        for i in range(0,len(lists)):
-            quesList.append(lists[i].questionID)
-        languageRef = code.objects.get(codeName = agename[1])
-        quesTransList = questionTranslation.objects.filter(questionID__in =quesList,languageCodeID = languageRef.codeID)
-        serializers1 = GetTranslatedQuestion(quesTransList,many=True)
-        return Response({"QuesAge" :serializers.data,
-                         "QuesTrans" : serializers1.data})
+        try:
+            ageid = kwargs['AgeID']
+            AgeGrp =AgeGroup.objects.get(AgeGroupID =ageid)
+            agename = AgeGrp.AgeGroupName.split('-')
+            lists = QuestionAge.objects.filter(AgeGroupID=ageid)
+            serializers=QuestionAgeSerializer(lists,many=True)
+            quesList = []
+            for i in range(0,len(lists)):
+                quesList.append(lists[i].questionID)
+            languageRef = code.objects.get(codeName = agename[1])
+            quesTransList = questionTranslation.objects.filter(questionID__in =quesList,languageCodeID = languageRef.codeID).values_list('questionTranslationID', flat=True)
+            query= correctOption.objects.filter(questionTranslationID__in = list(quesTransList))
+            serializer1 = GetCorrectOption(query,many=True)
+            finalQues = questionTranslation.objects.filter(questionID__in =quesList,languageCodeID = languageRef.codeID).values_list('questionID', flat=True)
+            finalQuesID = list(finalQues)
+            opts = option.objects.filter(questionID__in=finalQuesID).values_list('optionID', flat=True)
+            optList = list(opts)
+            langCodes = questionTranslation.objects.filter(questionID__in =quesList,languageCodeID = languageRef.codeID).values_list('languageCodeID', flat=True)
+            lang = list(langCodes)
+            optTrans = optionTranslation.objects.filter(optionID__in=optList,languageCodeID__in = lang)
+            serializerF = GetAllTranslatedOptions(optTrans,many=True)
+            return Response({"QuesAge" :serializers.data,
+                             "Questions" : serializer1.data,
+                             "Options" : serializerF.data})
+        except Exception as e:
+            return Response(e,status=500)
 
 
 class QuesUsage(APIView):                            #Get ques usage API
@@ -733,19 +857,22 @@ class QuesUsage(APIView):                            #Get ques usage API
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self,request,**kwargs):
-        cmpquesList = competitionQuestion.objects.filter(questionID = kwargs['quesID'])
-        serializers = CmpQuesGetAllSerializer(cmpquesList,many=True)
-        cmpQues = []
-        AgegrpName = []
-        cmpid = []
-        for i in range(0,len(serializers.data)):
-            if serializers.data[i]['competitionAgeID']['AgeGroupClassID']['AgeGroupID']['AgeGroupName'] not in AgegrpName or serializers.data[i]['competitionAgeID']['competitionID']['competitionID'] not in cmpid:
-                cmpQues.append(serializers.data[i]['competitionQuestionID'])
-                AgegrpName.append(serializers.data[i]['competitionAgeID']['AgeGroupClassID']['AgeGroupID']['AgeGroupName'])
-                cmpid.append(serializers.data[i]['competitionAgeID']['competitionID']['competitionID'])
-        cmpquesList = competitionQuestion.objects.filter(competitionQuestionID__in =cmpQues)
-        serializers = CmpQuesGetAllSerializer(cmpquesList,many=True)
-        return Response(serializers.data)
+        try:
+            cmpquesList = competitionQuestion.objects.filter(questionID = kwargs['quesID'])
+            serializers = CmpQuesGetAllSerializer(cmpquesList,many=True)
+            cmpQues = []
+            AgegrpName = []
+            cmpid = []
+            for i in range(0,len(serializers.data)):
+                if serializers.data[i]['competitionAgeID']['AgeGroupClassID']['AgeGroupID']['AgeGroupName'] not in AgegrpName or serializers.data[i]['competitionAgeID']['competitionID']['competitionID'] not in cmpid:
+                    cmpQues.append(serializers.data[i]['competitionQuestionID'])
+                    AgegrpName.append(serializers.data[i]['competitionAgeID']['AgeGroupClassID']['AgeGroupID']['AgeGroupName'])
+                    cmpid.append(serializers.data[i]['competitionAgeID']['competitionID']['competitionID'])
+            cmpquesList = competitionQuestion.objects.filter(competitionQuestionID__in =cmpQues)
+            serializers = CmpQuesGetAllSerializer(cmpquesList,many=True)
+            return Response(serializers.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 
 class GetAllStudentsAgeGroupWise(APIView):               #Get All Students Age Grp Wise API
@@ -753,51 +880,61 @@ class GetAllStudentsAgeGroupWise(APIView):               #Get All Students Age G
      permission_classes = (permissions.IsAuthenticated,)
 
      def get(self,request,**kwargs):
-        AgeclassList = AgeGroupClass.objects.filter(AgeGroupID = kwargs['AgeID'])
-        AgeClassList = []
-        for i in range(0,len(AgeclassList)):
-            AgeClassList.append(AgeclassList[i].AgeGroupClassID)
-        CmpageList = competitionAge.objects.filter(AgeGroupClassID__in = AgeClassList , competitionID = kwargs['cmpID'])
-        CmpAgeList = []
-        for i in range(0,len(CmpageList)):
-            CmpAgeList.append(CmpageList[i].competitionAgeID)
-        lists = studentEnrollment.objects.filter(competitionAgeID__in= CmpAgeList).exclude(score=999)
-        serializers=studentEnrollmentSerializer(lists,many=True)
-        return Response(serializers.data)
+        try:
+            AgeclassList = AgeGroupClass.objects.filter(AgeGroupID = kwargs['AgeID'])
+            AgeClassList = []
+            for i in range(0,len(AgeclassList)):
+                AgeClassList.append(AgeclassList[i].AgeGroupClassID)
+            CmpageList = competitionAge.objects.filter(AgeGroupClassID__in = AgeClassList , competitionID = kwargs['cmpID'])
+            CmpAgeList = []
+            for i in range(0,len(CmpageList)):
+                CmpAgeList.append(CmpageList[i].competitionAgeID)
+            lists = studentEnrollment.objects.filter(competitionAgeID__in= CmpAgeList).exclude(score=999)
+            serializers=studentEnrollmentSerializer(lists,many=True)
+            return Response(serializers.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetClassWiseAgeGroup(APIView):                  #Get AgeGrps ClassWise API
     authentication_classes = (TokenAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self,request,**kwargs):
-        agegrpclass=AgeGroupClass.objects.filter(ClassID=kwargs['Class'])
-        a=GetAgeGrpCmpWise()
-        d=a.get(request,cmpID=kwargs['cmpID'])
-        id = []
-        for i in range(0,len(d.data['AgeGrp'])):
-            for j in range(0,len(agegrpclass)):
-                if(d.data['AgeGrp'][i]['AgeGroupID']==agegrpclass[j].AgeGroupID.AgeGroupID):
-                    id.append(agegrpclass[j].AgeGroupID.AgeGroupID)
-        agelist = AgeGroup.objects.filter(AgeGroupID__in=id)
-        serializers=GetAgeGroupsid(agelist,many=True)
-        return Response(serializers.data)
+        try:
+            agegrpclass=AgeGroupClass.objects.filter(ClassID=kwargs['Class'])
+            a=GetAgeGrpCmpWise()
+            d=a.get(request,cmpID=kwargs['cmpID'])
+            id = []
+            for i in range(0,len(d.data['AgeGrp'])):
+                for j in range(0,len(agegrpclass)):
+                    if(d.data['AgeGrp'][i]['AgeGroupID']==agegrpclass[j].AgeGroupID.AgeGroupID):
+                        id.append(agegrpclass[j].AgeGroupID.AgeGroupID)
+            agelist = AgeGroup.objects.filter(AgeGroupID__in=id)
+            serializers=GetAgeGroupsid(agelist,many=True)
+            return Response(serializers.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetTotalMarks(APIView):                   #Get Total marks API
      authentication_classes = (TokenAuthentication, )
      permission_classes = (permissions.IsAuthenticated,)
 
      def get(self,request,**kwargs):
-        cmp=kwargs['cmpID']
-        g=GetcmpQues()
-        ques=g.get(request,AgeID=kwargs['ageID'],cmpID=cmp)
-        marks=0
-        defaultbonus = 0
-        for i in range(0,len(ques.data['cmpQuesList'])):
-            codeRef = code.objects.get(codeName=ques.data['cmpQuesList'][i]['questionLevelCodeID']['codeName'])
-            marks = marks + competition_MarkScheme.objects.filter(competitionAgeID=ques.data['cmpQuesList'][i]['competitionAgeID'],questionLevelCodeID=codeRef.codeID)[0].correctMarks
-            defaultbonus = competitionAge.objects.get(competitionAgeID = ques.data['cmpQuesList'][i]['competitionAgeID']).defaultBonusMarks
-        total = marks + defaultbonus
-        return Response(total)
+        try:
+            cmp=kwargs['cmpID']
+            g=GetcmpQues()
+            ques=g.get(request,AgeID=kwargs['ageID'],cmpID=cmp)
+            marks=0
+            defaultbonus = 0
+            for i in range(0,len(ques.data['cmpQuesList'])):
+                codeRef = code.objects.get(codeName=ques.data['cmpQuesList'][i]['questionLevelCodeID']['codeName'])
+                marks = marks + competition_MarkScheme.objects.filter(competitionAgeID=ques.data['cmpQuesList'][i]['competitionAgeID'],questionLevelCodeID=codeRef.codeID)[0].correctMarks
+                defaultbonus = competitionAge.objects.get(competitionAgeID = ques.data['cmpQuesList'][i]['competitionAgeID']).defaultBonusMarks
+            total = marks + defaultbonus
+            return Response(total)
+        except Exception as e:
+            return Response(e,status=500)
+
 
 
 @parser_classes((MultiPartParser,))
@@ -812,10 +949,14 @@ class CustomizePPT(APIView):                      #Get functions related to ppt 
 
     parser_classes = (FileUploadParser,)
     def post(self,request):
-        files=request.FILES.getlist('ppt')
-        for f in files:
-             self.saveppt(f)
-        return Response(status=200)
+        try:
+            files=request.FILES.getlist('ppt')
+            for f in files:
+                 self.saveppt(f)
+            return Response(status=200)
+        except Exception as e:
+            return Response(e,status=500)
+
 
     def ppt(self,f,data,school,type,duplicate):
         text_runs = []
@@ -969,91 +1110,102 @@ class deleteFiles(APIView):                       #Delete zip created API
     c = CustomizePPT()
     ppt = c.ppt
     def get(self,request,**kwargs):
-        id=kwargs['schoolID']
-        group=kwargs['group']
-        year=kwargs['year']
-        Class=kwargs['class']
-        type=kwargs['CertificateType']
-        if(type=='participation'):
-            School = school.objects.filter(schoolID=id)
-            sch = SchoolSerializers(School, many=True)
-            os.remove(os.path.join(settings.MEDIA_ROOT) + '/output//'+sch.data[0]['schoolName']+', '+sch.data[0]['addressID']['city']+'-Class-'+str(Class)+'-'+ year + '.zip')
-        if(type=='schoolToppers'):
-            School = school.objects.filter(schoolID=id)
-            sch = SchoolSerializers(School, many=True)
-            os.remove(os.path.join(settings.MEDIA_ROOT) + '/output//' + sch.data[0]['schoolName'] + ', ' +sch.data[0]['addressID']['city'] + '-Toppers-' +  group + '-' + year + '.zip')
-        if(type=='nationalToppers'):
-            os.remove(os.path.join(settings.MEDIA_ROOT) + '/output//' + 'National Toppers-' + group + '-' + year + '.zip')
-        return Response(status=200)
+        try:
+            id=kwargs['schoolID']
+            group=kwargs['group']
+            year=kwargs['year']
+            Class=kwargs['class']
+            type=kwargs['CertificateType']
+            if(type=='participation'):
+                School = school.objects.filter(schoolID=id)
+                sch = SchoolSerializers(School, many=True)
+                os.remove(os.path.join(settings.MEDIA_ROOT) + '/output//'+sch.data[0]['schoolName']+', '+sch.data[0]['addressID']['city']+'-Class-'+str(Class)+'-'+ year + '.zip')
+            if(type=='schoolToppers'):
+                School = school.objects.filter(schoolID=id)
+                sch = SchoolSerializers(School, many=True)
+                os.remove(os.path.join(settings.MEDIA_ROOT) + '/output//' + sch.data[0]['schoolName'] + ', ' +sch.data[0]['addressID']['city'] + '-Toppers-' +  group + '-' + year + '.zip')
+            if(type=='nationalToppers'):
+                os.remove(os.path.join(settings.MEDIA_ROOT) + '/output//' + 'National Toppers-' + group + '-' + year + '.zip')
+            return Response(status=200)
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetParticipationCertificates(APIView):                  #Get Participation Certificate API
     authentication_classes = (TokenAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request,**kwargs ):
-        c = CustomizePPT()
-        g=GetSchoolClassStudents()
-        t=GetLatestTemplate()
-        d=g.get(request,cmpID=kwargs['cmpID'],schoolClassID=kwargs['schoolClassID'])
-        if len(d.data)>0:
-            cl=GetClassWiseAgeGroup()
-            agegrpid=cl.get(request,cmpID=kwargs['cmpID'], Class=d.data[0]['schoolClassID']['classNumber'])
-            data=[]
-            template=t.get(request,type='Participation')
-            for i in range(0,len(d.data)):
-                for j in range(0,len(agegrpid.data)):
-                    if d.data[i]['competitionAgeID']['AgeGroupClassID']['AgeGroupID']['AgeGroupID']== agegrpid.data[j]['AgeGroupID']:
-                         tot=GetTotalMarks()
-                         totalMarks=tot.get(request,cmpID=kwargs['cmpID'],ageID=agegrpid.data[j]['AgeGroupID'])
-                data.append({'year':d.data[i]['competitionAgeID']['competitionID']['startDate'][0:4],
-                             'Name':d.data[i]['userID']['username'],
-                             'loginID':d.data[i]['userID']['loginID'],
-                             'group':d.data[i]['competitionAgeID']['AgeGroupClassID']['AgeGroupID']['AgeGroupName'],
-                             'score':str(d.data[i]['score']+d.data[i]['bonusMarks']),
-                             'total':totalMarks.data,
-                             'class':str(d.data[i]['schoolClassID']['classNumber'])})
-            school=d.data[0]['schoolClassID']['schoolID']['schoolName']+', '+d.data[0]['schoolClassID']['schoolID']['addressID']['city']
-            type='participation'
-            c.ppt(os.path.join(settings.MEDIA_ROOT) + '/ppt//'+template.data, data, school,type,duplicate=False)
-            return Response(status=200)
-        else:
-            return Response(status=204)
+        try:
+            c = CustomizePPT()
+            g=GetSchoolClassStudents()
+            t=GetLatestTemplate()
+            d=g.get(request,cmpID=kwargs['cmpID'],schoolClassID=kwargs['schoolClassID'])
+            if len(d.data)>0:
+                cl=GetClassWiseAgeGroup()
+                agegrpid=cl.get(request,cmpID=kwargs['cmpID'], Class=d.data[0]['schoolClassID']['classNumber'])
+                data=[]
+                template=t.get(request,type='Participation')
+                for i in range(0,len(d.data)):
+                    for j in range(0,len(agegrpid.data)):
+                        if d.data[i]['competitionAgeID']['AgeGroupClassID']['AgeGroupID']['AgeGroupID']== agegrpid.data[j]['AgeGroupID']:
+                             tot=GetTotalMarks()
+                             totalMarks=tot.get(request,cmpID=kwargs['cmpID'],ageID=agegrpid.data[j]['AgeGroupID'])
+                    data.append({'year':d.data[i]['competitionAgeID']['competitionID']['startDate'][0:4],
+                                 'Name':d.data[i]['userID']['username'],
+                                 'loginID':d.data[i]['userID']['loginID'],
+                                 'group':d.data[i]['competitionAgeID']['AgeGroupClassID']['AgeGroupID']['AgeGroupName'],
+                                 'score':str(d.data[i]['score']+d.data[i]['bonusMarks']),
+                                 'total':totalMarks.data,
+                                 'class':str(d.data[i]['schoolClassID']['classNumber'])})
+                school=d.data[0]['schoolClassID']['schoolID']['schoolName']+', '+d.data[0]['schoolClassID']['schoolID']['addressID']['city']
+                type='participation'
+                c.ppt(os.path.join(settings.MEDIA_ROOT) + '/ppt//'+template.data, data, school,type,duplicate=False)
+                return Response(status=200)
+            else:
+                return Response(status=204)
+        except:
+                return Response(status=500)
+
+            
 
 class GetSchoolToppers(APIView):                     #Get School Toppers Cerificate API
         authentication_classes = (TokenAuthentication, )
         permission_classes = (permissions.IsAuthenticated,)
 
         def get(self,request,**kwargs):
-            c = CustomizePPT()
-            t= GetLatestTemplate()
-            g=GetStudentsAgeGroupWise()
-            d=g.get(request,cmpID=kwargs['cmpID'],AgeID=kwargs['AgeID'],schoolID=kwargs['schoolID'])
-            template=t.get(request,type='School_Toppers')
-            tot = GetTotalMarks()
-            totalMarks = tot.get(request, cmpID=kwargs['cmpID'], ageID=kwargs['AgeID'])
-            if len(d.data)>0:
-                data=[]
-                for i in range(0, len(d.data)):
-                    if d.data[i]['score']!= 999:
-                        data.append({'year': d.data[i]['competitionAgeID']['competitionID']['startDate'][0:4],
-                                     'Name': d.data[i]['userID']['username'],
-                                     'loginID':d.data[i]['userID']['loginID'],
-                                     'group': d.data[i]['competitionAgeID']['AgeGroupClassID']['AgeGroupID']['AgeGroupName'],
-                                     'score': d.data[i]['score']+d.data[i]['bonusMarks'],
-                                     'total': totalMarks.data,
-                                     'time': d.data[i]['timeTaken'],
-                                     'class': str(d.data[i]['schoolClassID']['classNumber'])})
-                if len(data)>0:
-                    data = sorted(data, key=itemgetter('score', 'time'))
-                    data = sorted(data, key=lambda k: (-k['score'], k['time']))
-                    school = d.data[0]['schoolClassID']['schoolID']['schoolName'] + ', ' + d.data[0]['schoolClassID']['schoolID']['addressID']['city']
-                    type='schoolToppers'
-                    c.ppt(os.path.join(settings.MEDIA_ROOT) + '/ppt//'+template.data, data, school,type,duplicate=False)
-                    return Response(status=200)
+            try:
+                c = CustomizePPT()
+                t= GetLatestTemplate()
+                g=GetStudentsAgeGroupWise()
+                d=g.get(request,cmpID=kwargs['cmpID'],AgeID=kwargs['AgeID'],schoolID=kwargs['schoolID'])
+                template=t.get(request,type='School_Toppers')
+                tot = GetTotalMarks()
+                totalMarks = tot.get(request, cmpID=kwargs['cmpID'], ageID=kwargs['AgeID'])
+                if len(d.data)>0:
+                    data=[]
+                    for i in range(0, len(d.data)):
+                        if d.data[i]['score']!= 999:
+                            data.append({'year': d.data[i]['competitionAgeID']['competitionID']['startDate'][0:4],
+                                         'Name': d.data[i]['userID']['username'],
+                                         'loginID':d.data[i]['userID']['loginID'],
+                                         'group': d.data[i]['competitionAgeID']['AgeGroupClassID']['AgeGroupID']['AgeGroupName'],
+                                         'score': d.data[i]['score']+d.data[i]['bonusMarks'],
+                                         'total': totalMarks.data,
+                                         'time': d.data[i]['timeTaken'],
+                                         'class': str(d.data[i]['schoolClassID']['classNumber'])})
+                    if len(data)>0:
+                        data = sorted(data, key=itemgetter('score', 'time'))
+                        data = sorted(data, key=lambda k: (-k['score'], k['time']))
+                        school = d.data[0]['schoolClassID']['schoolID']['schoolName'] + ', ' + d.data[0]['schoolClassID']['schoolID']['addressID']['city']
+                        type='schoolToppers'
+                        c.ppt(os.path.join(settings.MEDIA_ROOT) + '/ppt//'+template.data, data, school,type,duplicate=False)
+                        return Response(status=200)
+                    else:
+                        return Response(status=204)
                 else:
                     return Response(status=204)
-            else:
-                return Response(status=204)
+            except:
+                return Response(status=500)
 
 
 class GetCountryWiseStudents(APIView):                 #Get Students CountryWise API
@@ -1061,276 +1213,304 @@ class GetCountryWiseStudents(APIView):                 #Get Students CountryWise
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self,request,**kwargs):
-        students=studentEnrollment.objects.all().exclude(score=999)
-        stu=[]
-        for i in range(0,len(students)):
-            if(students[i].schoolClassID.schoolID.addressID.countryID.countryID==int(kwargs['countryID'])
-            and students[i].competitionAgeID.competitionID.competitionID==int(kwargs['cmpID'])
-            and students[i].competitionAgeID.AgeGroupClassID.AgeGroupID.AgeGroupID==int(kwargs['AgeID'])):
+        try:
+            students=studentEnrollment.objects.all().exclude(score=999)
+            stu=[]
+            for i in range(0,len(students)):
+                if(students[i].schoolClassID.schoolID.addressID.countryID.countryID==int(kwargs['countryID'])
+                and students[i].competitionAgeID.competitionID.competitionID==int(kwargs['cmpID'])
+                and students[i].competitionAgeID.AgeGroupClassID.AgeGroupID.AgeGroupID==int(kwargs['AgeID'])):
 
-                stu.append(students[i].studentEnrollmentID)
-        lists = studentEnrollment.objects.filter(studentEnrollmentID__in=stu)
-        serializers = studentEnrollmentSerializer(lists, many=True)
-        return Response(serializers.data)
+                    stu.append(students[i].studentEnrollmentID)
+            lists = studentEnrollment.objects.filter(studentEnrollmentID__in=stu)
+            serializers = studentEnrollmentSerializer(lists, many=True)
+            return Response(serializers.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetCountryWiseToppers(APIView):                            #Get Toppers CountryWise API
     authentication_classes = (TokenAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self,request,**kwargs):
-        students=studentEnrollment.objects.all().exclude(score=999)
-        stu=[]
-        for i in range(0,len(students)):
-            if(students[i].schoolClassID.schoolID.addressID.countryID.countryID==int(kwargs['countryID'])
-            and students[i].competitionAgeID.competitionID.competitionID==int(kwargs['cmpID'])
-            and students[i].competitionAgeID.AgeGroupClassID.AgeGroupID.AgeGroupID==int(kwargs['AgeID'])):
-                stu.append(students[i].studentEnrollmentID)
-        lists = studentEnrollment.objects.filter(studentEnrollmentID__in=stu)
-        data = []
-        lists1 = []
-        if len(lists)>0:
-            for i in range(0,len(lists)):
-                data.append({ 'score': lists[i].score,
-                              'time': lists[i].timeTaken,
-                              'userID': lists[i].studentEnrollmentID})
+        try:
+            students=studentEnrollment.objects.all().exclude(score=999)
+            stu=[]
+            for i in range(0,len(students)):
+                if(students[i].schoolClassID.schoolID.addressID.countryID.countryID==int(kwargs['countryID'])
+                and students[i].competitionAgeID.competitionID.competitionID==int(kwargs['cmpID'])
+                and students[i].competitionAgeID.AgeGroupClassID.AgeGroupID.AgeGroupID==int(kwargs['AgeID'])):
+                    stu.append(students[i].studentEnrollmentID)
+            lists = studentEnrollment.objects.filter(studentEnrollmentID__in=stu)
+            data = []
+            lists1 = []
+            if len(lists)>0:
+                for i in range(0,len(lists)):
+                    data.append({ 'score': lists[i].score,
+                                  'time': lists[i].timeTaken,
+                                  'userID': lists[i].studentEnrollmentID})
 
-            data = sorted(data, key=itemgetter('score', 'time'))
-            data = sorted(data, key=lambda k: (-k['score'], k['time']))
-            if len(data) >= 3:
-                for i in range(0,3):
-                    lists1.append(data[i]['userID'])
-            else:
-                 for i in range(0,len(data)):
-                    lists1.append(data[i]['userID'])
-            lists = studentEnrollment.objects.filter(studentEnrollmentID__in=lists1)
-        serializer = studentEnrollmentSerializer(lists, many=True)
-        return Response(serializer.data)
+                data = sorted(data, key=itemgetter('score', 'time'))
+                data = sorted(data, key=lambda k: (-k['score'], k['time']))
+                if len(data) >= 3:
+                    for i in range(0,3):
+                        lists1.append(data[i]['userID'])
+                else:
+                     for i in range(0,len(data)):
+                        lists1.append(data[i]['userID'])
+                lists = studentEnrollment.objects.filter(studentEnrollmentID__in=lists1)
+            serializer = studentEnrollmentSerializer(lists, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetStateWiseStudents(APIView):                           #Get Toppers StateWise API
     authentication_classes = (TokenAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, **kwargs):
-        students = studentEnrollment.objects.all().exclude(score=999)
-        stu = []
-        for i in range(0, len(students)):
-            if (students[i].schoolClassID.schoolID.addressID.countryID.countryID == int(kwargs['countryID']) and students[i].schoolClassID.schoolID.addressID.stateID.stateID == int(kwargs['stateID'])
-                    and students[i].competitionAgeID.competitionID.competitionID == int(kwargs['cmpID'])
-                    and students[i].competitionAgeID.AgeGroupClassID.AgeGroupID.AgeGroupID == int(kwargs['AgeID'])):
-                stu.append(students[i].studentEnrollmentID)
-        lists = studentEnrollment.objects.filter(studentEnrollmentID__in=stu)
-        data = []
-        lists1 = []
-        if len(lists)>0:
-            for i in range(0,len(lists)):
-                data.append({ 'score': lists[i].score,
-                              'time': lists[i].timeTaken,
-                              'userID': lists[i].studentEnrollmentID})
+        try:
+            students = studentEnrollment.objects.all().exclude(score=999)
+            stu = []
+            for i in range(0, len(students)):
+                if (students[i].schoolClassID.schoolID.addressID.countryID.countryID == int(kwargs['countryID']) and students[i].schoolClassID.schoolID.addressID.stateID.stateID == int(kwargs['stateID'])
+                        and students[i].competitionAgeID.competitionID.competitionID == int(kwargs['cmpID'])
+                        and students[i].competitionAgeID.AgeGroupClassID.AgeGroupID.AgeGroupID == int(kwargs['AgeID'])):
+                    stu.append(students[i].studentEnrollmentID)
+            lists = studentEnrollment.objects.filter(studentEnrollmentID__in=stu)
+            data = []
+            lists1 = []
+            if len(lists)>0:
+                for i in range(0,len(lists)):
+                    data.append({ 'score': lists[i].score,
+                                  'time': lists[i].timeTaken,
+                                  'userID': lists[i].studentEnrollmentID})
 
-            data = sorted(data, key=itemgetter('score', 'time'))
-            data = sorted(data, key=lambda k: (-k['score'], k['time']))
-            if len(data) >= 3:
-                for i in range(0,3):
-                    lists1.append(data[i]['userID'])
-            else:
-                 for i in range(0,len(data)):
-                    lists1.append(data[i]['userID'])
-            lists = studentEnrollment.objects.filter(studentEnrollmentID__in=lists1)
-        serializer = studentEnrollmentSerializer(lists, many=True)
-        return Response(serializer.data)
+                data = sorted(data, key=itemgetter('score', 'time'))
+                data = sorted(data, key=lambda k: (-k['score'], k['time']))
+                if len(data) >= 3:
+                    for i in range(0,3):
+                        lists1.append(data[i]['userID'])
+                else:
+                     for i in range(0,len(data)):
+                        lists1.append(data[i]['userID'])
+                lists = studentEnrollment.objects.filter(studentEnrollmentID__in=lists1)
+            serializer = studentEnrollmentSerializer(lists, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetDistrictWiseStudents(APIView):             #Get Toppers DistrictWise API
     authentication_classes = (TokenAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, **kwargs):
-        students = studentEnrollment.objects.all().exclude(score=999)
-        stu = []
-        for i in range(0, len(students)):
-            if (students[i].schoolClassID.schoolID.addressID.countryID.countryID == int(kwargs['countryID']) and students[i].schoolClassID.schoolID.addressID.stateID.stateID == int(kwargs['stateID'])
-            and students[i].schoolClassID.schoolID.addressID.districtID.districtID == int(kwargs['districtID'])
-                    and students[i].competitionAgeID.competitionID.competitionID == int(kwargs['cmpID'])
-                    and students[i].competitionAgeID.AgeGroupClassID.AgeGroupID.AgeGroupID == int(kwargs['AgeID'])):
-                stu.append(students[i].studentEnrollmentID)
-        lists = studentEnrollment.objects.filter(studentEnrollmentID__in=stu)
-        data = []
-        lists1 = []
-        if len(lists)>0:
-            for i in range(0,len(lists)):
-                data.append({ 'score': lists[i].score,
-                              'time': lists[i].timeTaken,
-                              'userID': lists[i].studentEnrollmentID})
+        try:
+            students = studentEnrollment.objects.all().exclude(score=999)
+            stu = []
+            for i in range(0, len(students)):
+                if (students[i].schoolClassID.schoolID.addressID.countryID.countryID == int(kwargs['countryID']) and students[i].schoolClassID.schoolID.addressID.stateID.stateID == int(kwargs['stateID'])
+                and students[i].schoolClassID.schoolID.addressID.districtID.districtID == int(kwargs['districtID'])
+                        and students[i].competitionAgeID.competitionID.competitionID == int(kwargs['cmpID'])
+                        and students[i].competitionAgeID.AgeGroupClassID.AgeGroupID.AgeGroupID == int(kwargs['AgeID'])):
+                    stu.append(students[i].studentEnrollmentID)
+            lists = studentEnrollment.objects.filter(studentEnrollmentID__in=stu)
+            data = []
+            lists1 = []
+            if len(lists)>0:
+                for i in range(0,len(lists)):
+                    data.append({ 'score': lists[i].score,
+                                  'time': lists[i].timeTaken,
+                                  'userID': lists[i].studentEnrollmentID})
 
-            data = sorted(data, key=itemgetter('score', 'time'))
-            data = sorted(data, key=lambda k: (-k['score'], k['time']))
-            if len(data) >= 3:
-                for i in range(0,3):
-                    lists1.append(data[i]['userID'])
-            else:
-                 for i in range(0,len(data)):
-                    lists1.append(data[i]['userID'])
-            lists = studentEnrollment.objects.filter(studentEnrollmentID__in=lists1)
-        serializer = studentEnrollmentSerializer(lists, many=True)
-        return Response(serializer.data)
+                data = sorted(data, key=itemgetter('score', 'time'))
+                data = sorted(data, key=lambda k: (-k['score'], k['time']))
+                if len(data) >= 3:
+                    for i in range(0,3):
+                        lists1.append(data[i]['userID'])
+                else:
+                     for i in range(0,len(data)):
+                        lists1.append(data[i]['userID'])
+                lists = studentEnrollment.objects.filter(studentEnrollmentID__in=lists1)
+            serializer = studentEnrollmentSerializer(lists, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetSchoolGroupWiseStudents(APIView):                 #Get Toppers SchoolGrpWise API
     authentication_classes = (TokenAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, **kwargs):
-        students = studentEnrollment.objects.all().exclude(score=999)
-        stu = []
-        for i in range(0, len(students)):
-            if (students[i].schoolClassID.schoolID.schoolGroupID.codeID == int(kwargs['codeID'])
-                and students[i].competitionAgeID.competitionID.competitionID == int(kwargs['cmpID'])
-                and students[i].competitionAgeID.AgeGroupClassID.AgeGroupID.AgeGroupID == int(kwargs['AgeID'])):
-                stu.append(students[i].studentEnrollmentID)
-        lists = studentEnrollment.objects.filter(studentEnrollmentID__in=stu)
-        data = []
-        lists1 = []
-        if len(lists)>0:
-            for i in range(0,len(lists)):
-                data.append({ 'score': lists[i].score,
-                              'time': lists[i].timeTaken,
-                              'userID': lists[i].studentEnrollmentID})
+        try:
+            students = studentEnrollment.objects.all().exclude(score=999)
+            stu = []
+            for i in range(0, len(students)):
+                if (students[i].schoolClassID.schoolID.schoolGroupID.codeID == int(kwargs['codeID'])
+                    and students[i].competitionAgeID.competitionID.competitionID == int(kwargs['cmpID'])
+                    and students[i].competitionAgeID.AgeGroupClassID.AgeGroupID.AgeGroupID == int(kwargs['AgeID'])):
+                    stu.append(students[i].studentEnrollmentID)
+            lists = studentEnrollment.objects.filter(studentEnrollmentID__in=stu)
+            data = []
+            lists1 = []
+            if len(lists)>0:
+                for i in range(0,len(lists)):
+                    data.append({ 'score': lists[i].score,
+                                  'time': lists[i].timeTaken,
+                                  'userID': lists[i].studentEnrollmentID})
 
-            data = sorted(data, key=itemgetter('score', 'time'))
-            data = sorted(data, key=lambda k: (-k['score'], k['time']))
-            if len(data) >= 3:
-                for i in range(0,3):
-                    lists1.append(data[i]['userID'])
-            else:
-                 for i in range(0,len(data)):
-                    lists1.append(data[i]['userID'])
-            lists = studentEnrollment.objects.filter(studentEnrollmentID__in=lists1)
-        serializer = studentEnrollmentSerializer(lists, many=True)
-        return Response(serializer.data)
+                data = sorted(data, key=itemgetter('score', 'time'))
+                data = sorted(data, key=lambda k: (-k['score'], k['time']))
+                if len(data) >= 3:
+                    for i in range(0,3):
+                        lists1.append(data[i]['userID'])
+                else:
+                     for i in range(0,len(data)):
+                        lists1.append(data[i]['userID'])
+                lists = studentEnrollment.objects.filter(studentEnrollmentID__in=lists1)
+            serializer = studentEnrollmentSerializer(lists, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetSchoolTypeWiseStudents(APIView):                   #Get Toppers SchoolTypeWise API
     authentication_classes = (TokenAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, **kwargs):
-        students = studentEnrollment.objects.all().exclude(score=999)
-        stu = []
-        for i in range(0, len(students)):
-            if (students[i].schoolClassID.schoolID.schoolTypeCodeID.codeID == int(kwargs['codeID'])
-                and students[i].competitionAgeID.competitionID.competitionID == int(kwargs['cmpID'])
-                and students[i].competitionAgeID.AgeGroupClassID.AgeGroupID.AgeGroupID == int(kwargs['AgeID'])):
-                stu.append(students[i].studentEnrollmentID)
-        lists = studentEnrollment.objects.filter(studentEnrollmentID__in=stu)
-        data = []
-        lists1 = []
-        if len(lists)>0:
-            for i in range(0,len(lists)):
-                data.append({ 'score': lists[i].score,
-                              'time': lists[i].timeTaken,
-                              'userID': lists[i].studentEnrollmentID})
+        try:
+            students = studentEnrollment.objects.all().exclude(score=999)
+            stu = []
+            for i in range(0, len(students)):
+                if (students[i].schoolClassID.schoolID.schoolTypeCodeID.codeID == int(kwargs['codeID'])
+                    and students[i].competitionAgeID.competitionID.competitionID == int(kwargs['cmpID'])
+                    and students[i].competitionAgeID.AgeGroupClassID.AgeGroupID.AgeGroupID == int(kwargs['AgeID'])):
+                    stu.append(students[i].studentEnrollmentID)
+            lists = studentEnrollment.objects.filter(studentEnrollmentID__in=stu)
+            data = []
+            lists1 = []
+            if len(lists)>0:
+                for i in range(0,len(lists)):
+                    data.append({ 'score': lists[i].score,
+                                  'time': lists[i].timeTaken,
+                                  'userID': lists[i].studentEnrollmentID})
 
-            data = sorted(data, key=itemgetter('score', 'time'))
-            data = sorted(data, key=lambda k: (-k['score'], k['time']))
-            if len(data) >= 3:
-                for i in range(0,3):
-                    lists1.append(data[i]['userID'])
-            else:
-                 for i in range(0,len(data)):
-                    lists1.append(data[i]['userID'])
-            lists = studentEnrollment.objects.filter(studentEnrollmentID__in=lists1)
-        serializer = studentEnrollmentSerializer(lists, many=True)
-        return Response(serializer.data)
+                data = sorted(data, key=itemgetter('score', 'time'))
+                data = sorted(data, key=lambda k: (-k['score'], k['time']))
+                if len(data) >= 3:
+                    for i in range(0,3):
+                        lists1.append(data[i]['userID'])
+                else:
+                     for i in range(0,len(data)):
+                        lists1.append(data[i]['userID'])
+                lists = studentEnrollment.objects.filter(studentEnrollmentID__in=lists1)
+            serializer = studentEnrollmentSerializer(lists, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetNationalToppers(APIView):                     #Get National Toppers Certificate API
     authentication_classes = (TokenAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self,request,**kwargs):
-        c = CustomizePPT()
-        t= GetLatestTemplate()
-        g=GetCountryWiseStudents()
-        d=g.get(request,cmpID=kwargs['cmpID'],AgeID=kwargs['AgeID'],countryID=kwargs['countryID'])
-        tot = GetTotalMarks()
-        totalMarks = tot.get(request, cmpID=kwargs['cmpID'], ageID=kwargs['AgeID'])
-        template=t.get(request,type='National_Toppers')
-        if len(d.data)>0:
-            data=[]
-            for i in range(0, len(d.data)):
-                data.append({'year': d.data[i]['competitionAgeID']['competitionID']['startDate'][0:4],
-                             'Name': d.data[i]['userID']['username'],
-                             'loginID':d.data[i]['userID']['loginID'],
-                             'group': d.data[i]['competitionAgeID']['AgeGroupClassID']['AgeGroupID']['AgeGroupName'],
-                             'score': d.data[i]['score']+d.data[i]['bonusMarks'],
-                             'total': totalMarks.data,
-                             'time': d.data[i]['timeTaken'],
-                             'class': str(d.data[i]['schoolClassID']['classNumber'])})
+        try:
+            c = CustomizePPT()
+            t= GetLatestTemplate()
+            g=GetCountryWiseStudents()
+            d=g.get(request,cmpID=kwargs['cmpID'],AgeID=kwargs['AgeID'],countryID=kwargs['countryID'])
+            tot = GetTotalMarks()
+            totalMarks = tot.get(request, cmpID=kwargs['cmpID'], ageID=kwargs['AgeID'])
+            template=t.get(request,type='National_Toppers')
+            if len(d.data)>0:
+                data=[]
+                for i in range(0, len(d.data)):
+                    data.append({'year': d.data[i]['competitionAgeID']['competitionID']['startDate'][0:4],
+                                 'Name': d.data[i]['userID']['username'],
+                                 'loginID':d.data[i]['userID']['loginID'],
+                                 'group': d.data[i]['competitionAgeID']['AgeGroupClassID']['AgeGroupID']['AgeGroupName'],
+                                 'score': d.data[i]['score']+d.data[i]['bonusMarks'],
+                                 'total': totalMarks.data,
+                                 'time': d.data[i]['timeTaken'],
+                                 'class': str(d.data[i]['schoolClassID']['classNumber'])})
 
-            data = sorted(data, key=itemgetter('score', 'time'))
-            data = sorted(data, key=lambda k: (-k['score'], k['time']))
-            type='nationalToppers'
-            c.ppt(os.path.join(settings.MEDIA_ROOT) + '/ppt//'+template.data, data, None,type,duplicate=False)
-            return Response(status=200)
-        else:
-         return Response(status=204)
+                data = sorted(data, key=itemgetter('score', 'time'))
+                data = sorted(data, key=lambda k: (-k['score'], k['time']))
+                type='nationalToppers'
+                c.ppt(os.path.join(settings.MEDIA_ROOT) + '/ppt//'+template.data, data, None,type,duplicate=False)
+                return Response(status=200)
+            else:
+             return Response(status=204)
+        except:
+            return Response(status=500)
 
 class GetLatestTemplate(APIView):               #Get Latest Template API
     authentication_classes = (TokenAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self,request,**kwargs):
-        type=kwargs['type']
-        f = []
-        for (dirpath, dirnames, filenames) in walk(os.path.join(settings.MEDIA_ROOT) + ("/ppt/")):
-            for file in filenames:
-                if (file.find(type) != -1):
-                    f.append(file)
-            break
-        datetimes=[]
-        for i in range(0,len(f)):
-            arr=f[i].split('_')
-            datetimes.append(arr[len(arr)-2]+'_'+arr[len(arr)-1].split('.')[0])
-            sortedArray = sorted(
-            datetimes,
-            key=lambda x: datetime.strptime(x, '%Y-%m-%d_%H-%M-%S'), reverse=True
-        )
-        for i in range(0,len(f)):
-            if str(sortedArray[0]) in f[i]:
-                name=f[i]
+        try:
+            type=kwargs['type']
+            f = []
+            print()
+            for (dirpath, dirnames, filenames) in walk(os.path.join(settings.MEDIA_ROOT) + ("/ppt/")):
+                for file in filenames:
+                    if (file.find(type) != -1):
+                        f.append(file)
                 break
-        return Response(name)
+            datetimes=[]
+            for i in range(0,len(f)):
+                arr=f[i].split('_')
+                datetimes.append(arr[len(arr)-2]+'_'+arr[len(arr)-1].split('.')[0])
+                sortedArray = sorted(
+                datetimes,
+                key=lambda x: datetime.strptime(x, '%Y-%m-%d_%H-%M-%S'), reverse=True
+            )
+            for i in range(0,len(f)):
+                if str(sortedArray[0]) in f[i]:
+                    name=f[i]
+                    break
+            return Response(name)
+        except:
+            return Response(status=500)
 
 class GetStateWiseMean(APIView):             #Get StateWise Mean API
     authentication_classes = (TokenAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self,request,**kwargs):
-        ageclassList = AgeGroupClass.objects.filter(AgeGroupID=kwargs['AgeID'])
-        AgeclassList = []
-        for i in range(0,len(ageclassList)):
-            AgeclassList.append(ageclassList[i].AgeGroupClassID)
-        cmpageList = competitionAge.objects.filter(AgeGroupClassID__in = AgeclassList,competitionID = kwargs['cmpID'])
-        CmpageList = []
-        for i in range(0,len(cmpageList)):
-            CmpageList.append(cmpageList[i].competitionAgeID)
-        studentlist = studentEnrollment.objects.filter(competitionAgeID__in = CmpageList).exclude(score=999)
-        stateids = []
-        for i in range(0,len(studentlist)):
-            if studentlist[i].schoolClassID.schoolID.addressID.stateID.stateID not in stateids:
-                stateids.append(studentlist[i].schoolClassID.schoolID.addressID.stateID.stateID)
-        stateList = States.objects.filter(stateID__in = stateids)
-        FinalList = []
-        for i in range(0,len(stateList)):
-            marks = []
-            for j in range(0,len(studentlist)):
-                if studentlist[j].schoolClassID.schoolID.addressID.stateID.stateID == stateList[i].stateID:
-                    total = studentlist[j].score+studentlist[j]. bonusMarks
-                    marks.append(total)
-            if len(marks)!= 0:
-                mean = statistics.mean(marks)
-            else:
-                mean = 0
-            stN = States.objects.get(stateID = stateList[i].stateID)
-            t = {"state": stN.name,"MeanMarks": mean}
-            FinalList.append(t)
-        return Response(FinalList)
+        try:
+            ageclassList = AgeGroupClass.objects.filter(AgeGroupID=kwargs['AgeID'])
+            AgeclassList = []
+            for i in range(0,len(ageclassList)):
+                AgeclassList.append(ageclassList[i].AgeGroupClassID)
+            cmpageList = competitionAge.objects.filter(AgeGroupClassID__in = AgeclassList,competitionID = kwargs['cmpID'])
+            CmpageList = []
+            for i in range(0,len(cmpageList)):
+                CmpageList.append(cmpageList[i].competitionAgeID)
+            studentlist = studentEnrollment.objects.filter(competitionAgeID__in = CmpageList).exclude(score=999)
+            stateids = []
+            for i in range(0,len(studentlist)):
+                if studentlist[i].schoolClassID.schoolID.addressID.stateID.stateID not in stateids:
+                    stateids.append(studentlist[i].schoolClassID.schoolID.addressID.stateID.stateID)
+            stateList = States.objects.filter(stateID__in = stateids)
+            FinalList = []
+            for i in range(0,len(stateList)):
+                marks = []
+                for j in range(0,len(studentlist)):
+                    if studentlist[j].schoolClassID.schoolID.addressID.stateID.stateID == stateList[i].stateID:
+                        total = studentlist[j].score+studentlist[j]. bonusMarks
+                        marks.append(total)
+                if len(marks)!= 0:
+                    mean = statistics.mean(marks)
+                else:
+                    mean = 0
+                stN = States.objects.get(stateID = stateList[i].stateID)
+                t = {"state": stN.name,"MeanMarks": mean}
+                FinalList.append(t)
+            return Response(FinalList)
+        except Exception as e:
+            return Response(e,status=500)
 
 
 class CheckAgeGrp(APIView):                 #Check if AgeGrp can update  API
@@ -1338,45 +1518,51 @@ class CheckAgeGrp(APIView):                 #Check if AgeGrp can update  API
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self,requests):
-        AgeclassRef = AgeGroupClass.objects.filter(AgeGroupID = requests.data.get('AgeID'))
-        classesList = []
-        classes = []
-        for i in range(0,len(AgeclassRef)):
-            classesList.append(AgeclassRef[i].AgeGroupClassID)
-            classes.append(AgeclassRef[i].ClassID.classNo)
-        cmpAgelist = competitionAge.objects.filter(AgeGroupClassID__in=classesList)
-        if len(cmpAgelist) >= 1:
-            return Response("AgeGroup can't be updated")
-        else:
-            return Response("Update")
-
-class UpdateAgeGrp(APIView):                       #Get Update Age Grp API
-    authentication_classes = (TokenAuthentication, )
-    permission_classes = (permissions.IsAuthenticated,)
-
-    def post(self,requests):
+        try:
             AgeclassRef = AgeGroupClass.objects.filter(AgeGroupID = requests.data.get('AgeID'))
             classesList = []
             classes = []
             for i in range(0,len(AgeclassRef)):
                 classesList.append(AgeclassRef[i].AgeGroupClassID)
                 classes.append(AgeclassRef[i].ClassID.classNo)
-            ageRef = AgeGroup.objects.get(AgeGroupID=requests.data.get('AgeID'))
-            t = {
-                "AgeGroupName":requests.data.get('AgeGroupName')
-            }
-            serializer = AgeGroupSerializer(instance=ageRef, data=collections.OrderedDict(t), partial=True)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            lists = requests.data.get('classes')
-            for i in range(0,len(AgeclassRef)):
-                if AgeclassRef[i].ClassID.classNo not in lists:
-                    AgeclassRef[i].delete()
-            for i in range(0,len(lists)):
-                if lists[i] not in classes:
-                    classref = Class.objects.get(classNo=lists[i])
-                    AgeGroupClass.objects.create(AgeGroupID = ageRef,ClassID=classref)
-            return Response(status=200)
+            cmpAgelist = competitionAge.objects.filter(AgeGroupClassID__in=classesList)
+            if len(cmpAgelist) >= 1:
+                return Response("AgeGroup can't be updated")
+            else:
+                return Response("Update")
+        except Exception as e:
+            return Response(e,status=500)
+
+class UpdateAgeGrp(APIView):                       #Get Update Age Grp API
+    authentication_classes = (TokenAuthentication, )
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self,requests):
+            try:
+                AgeclassRef = AgeGroupClass.objects.filter(AgeGroupID = requests.data.get('AgeID'))
+                classesList = []
+                classes = []
+                for i in range(0,len(AgeclassRef)):
+                    classesList.append(AgeclassRef[i].AgeGroupClassID)
+                    classes.append(AgeclassRef[i].ClassID.classNo)
+                ageRef = AgeGroup.objects.get(AgeGroupID=requests.data.get('AgeID'))
+                t = {
+                    "AgeGroupName":requests.data.get('AgeGroupName')
+                }
+                serializer = AgeGroupSerializer(instance=ageRef, data=collections.OrderedDict(t), partial=True)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+                lists = requests.data.get('classes')
+                for i in range(0,len(AgeclassRef)):
+                    if AgeclassRef[i].ClassID.classNo not in lists:
+                        AgeclassRef[i].delete()
+                for i in range(0,len(lists)):
+                    if lists[i] not in classes:
+                        classref = Class.objects.get(classNo=lists[i])
+                        AgeGroupClass.objects.create(AgeGroupID = ageRef,ClassID=classref)
+                return Response(status=200)
+            except Exception as e:
+                return Response(e,status=500)
 
 
 class GetcmpPreview(APIView):                     #Get CmpPreview API
@@ -1384,53 +1570,56 @@ class GetcmpPreview(APIView):                     #Get CmpPreview API
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self,request,**kwargs):
-        ageRef = AgeGroup.objects.get(AgeGroupID = kwargs['AgeID'])
-        ageclass = AgeGroupClass.objects.filter(AgeGroupID=ageRef.AgeGroupID)
-        agename =ageRef.AgeGroupName.split('-')
-        ageGrpclass = []
-        for i in range(0,len(ageclass)):
-            ageGrpclass.append(ageclass[i].AgeGroupClassID)
-        cmpage = competitionAge.objects.filter(AgeGroupClassID__in = ageGrpclass,competitionID=kwargs['cmpID'])
-        cmpQuesList = competitionQuestion.objects.filter(competitionAgeID=cmpage[0].competitionAgeID)
-        serializers = CmpQuesSerializer(cmpQuesList,many=True)
-        quesList = []
-        for i in range(0,len(cmpQuesList)):
-            quesList.append(cmpQuesList[i].questionID)
-        languageRef = code.objects.get(codeName = agename[1])
-        quesTransList = questionTranslation.objects.filter(questionID__in =quesList,languageCodeID = languageRef.codeID)
-        opts = option.objects.filter(questionID__in=quesList)
-        optionList = []
-        for i in range(0,len(opts)):
-            optionList.append(opts[i].optionID)
-        optTrans = optionTranslation.objects.filter(optionID__in=optionList,languageCodeID = languageRef.codeID)
-        serializers2 = GetAllTranslatedOptions(optTrans,many=True)
-        imagelist = []
-        skills=[]
-        questransID = []
-        for i in range(0,len(quesTransList)):
-            if quesTransList[i].questionID.questionTypeCodeID.codeName=='Mcqs_With_Images':
-                opt = option.objects.filter(questionID = quesTransList[i].questionID.questionID)
-                for j in range(0,len(opt)):
-                    coderef = code.objects.get(codeName='ImageOption')
-                    oimg = Image.objects.get(ObjectID=opt[j].optionID,ImageTypeCodeID=coderef.codeID)
-                    imagelist.append(oimg.ImageID)
-            quesref = question.objects.get(questionID = quesTransList[i].questionID.questionID)
-            skill = quesref.cs_skills.split(",")
-            l1=[]
-            for k in range(0,len(skill)):
-              l1.append(code.objects.get(codeID=skill[k]).codeName)
-            t = {"questionID": quesTransList[i].questionID.questionID,"skills":l1 }
-            skills.append(t)
-            questransID.append(quesTransList[i].questionTranslationID)
-        corrlist = correctOption.objects.filter(questionTranslationID__in =questransID)
-        serializers1 = GetCorrectOption(corrlist,many=True)
-        Imglists =  Image.objects.filter(ImageID__in = imagelist)
-        serializers3 = GetImages(Imglists, many=True)
-        return Response({"cmpQuesList":serializers.data,
-                         "QuesTrans":serializers1.data,
-                         "OptTrans":serializers2.data,
-                         "OptImages":serializers3.data,
-                         "skills":skills})
+        try:
+            ageRef = AgeGroup.objects.get(AgeGroupID = kwargs['AgeID'])
+            ageclass = AgeGroupClass.objects.filter(AgeGroupID=ageRef.AgeGroupID)
+            agename =ageRef.AgeGroupName.split('-')
+            ageGrpclass = []
+            for i in range(0,len(ageclass)):
+                ageGrpclass.append(ageclass[i].AgeGroupClassID)
+            cmpage = competitionAge.objects.filter(AgeGroupClassID__in = ageGrpclass,competitionID=kwargs['cmpID'])
+            cmpQuesList = competitionQuestion.objects.filter(competitionAgeID=cmpage[0].competitionAgeID)
+            serializers = CmpQuesSerializer(cmpQuesList,many=True)
+            quesList = []
+            for i in range(0,len(cmpQuesList)):
+                quesList.append(cmpQuesList[i].questionID)
+            languageRef = code.objects.get(codeName = agename[1])
+            quesTransList = questionTranslation.objects.filter(questionID__in =quesList,languageCodeID = languageRef.codeID)
+            opts = option.objects.filter(questionID__in=quesList)
+            optionList = []
+            for i in range(0,len(opts)):
+                optionList.append(opts[i].optionID)
+            optTrans = optionTranslation.objects.filter(optionID__in=optionList,languageCodeID = languageRef.codeID)
+            serializers2 = GetAllTranslatedOptions(optTrans,many=True)
+            imagelist = []
+            skills=[]
+            questransID = []
+            for i in range(0,len(quesTransList)):
+                if quesTransList[i].questionID.questionTypeCodeID.codeName=='Mcqs_With_Images':
+                    opt = option.objects.filter(questionID = quesTransList[i].questionID.questionID)
+                    for j in range(0,len(opt)):
+                        coderef = code.objects.get(codeName='ImageOption')
+                        oimg = Image.objects.get(ObjectID=opt[j].optionID,ImageTypeCodeID=coderef.codeID)
+                        imagelist.append(oimg.ImageID)
+                quesref = question.objects.get(questionID = quesTransList[i].questionID.questionID)
+                skill = quesref.cs_skills.split(",")
+                l1=[]
+                for k in range(0,len(skill)):
+                  l1.append(code.objects.get(codeID=skill[k]).codeName)
+                t = {"questionID": quesTransList[i].questionID.questionID,"skills":l1 }
+                skills.append(t)
+                questransID.append(quesTransList[i].questionTranslationID)
+            corrlist = correctOption.objects.filter(questionTranslationID__in =questransID)
+            serializers1 = GetCorrectOption(corrlist,many=True)
+            Imglists =  Image.objects.filter(ImageID__in = imagelist)
+            serializers3 = GetImages(Imglists, many=True)
+            return Response({"cmpQuesList":serializers.data,
+                             "QuesTrans":serializers1.data,
+                             "OptTrans":serializers2.data,
+                             "OptImages":serializers3.data,
+                             "skills":skills})
+        except Exception as e:
+            return Response(e,status=500)
 
 
 class GetAllSchoolStudents(APIView):            #Get All School Students API
@@ -1438,109 +1627,151 @@ class GetAllSchoolStudents(APIView):            #Get All School Students API
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self,request,**kwargs):
-        sch=school.objects.filter(schoolID=kwargs['schoolID'])
-        schclasses=schoolClass.objects.filter(schoolID=sch[0].schoolID)
-        classes=[]
-        for i in range(0,len(schclasses)):
-            classes.append(schclasses[i].schoolClassID)
-        students=studentEnrollment.objects.filter(schoolClassID__in=classes).values('userID').distinct()
-        s=[]
-        for i in range(0,len(students)):
-            obj=studentEnrollment.objects.filter(userID=students[i]['userID'])[0]
-            s.append(obj.studentEnrollmentID)
-        students=studentEnrollment.objects.filter(studentEnrollmentID__in =s)
-        paginator = CustomPagination()
-        response = paginator.generate_response(students,studentEnrollmentSerializer,request)
-        userRoleId = []
-        for i in range(0,len(response.data['results'])):
-            userRoleId.append(response.data['results'][i]['userID']['userID'])
-            lists = UserRole.objects.filter(userID__in=userRoleId)
-            serializer = UserRoleSerializer(lists,many=True)
-        return Response({
-            "StudData":response.data,
-            "RoleData":serializer.data
-        })
+        try:
+            sch=school.objects.filter(schoolID=kwargs['schoolID'])
+            schclasses=schoolClass.objects.filter(schoolID=sch[0].schoolID)
+            classes=[]
+            for i in range(0,len(schclasses)):
+                classes.append(schclasses[i].schoolClassID)
+            students=studentEnrollment.objects.filter(schoolClassID__in=classes).values('userID').distinct()
+            s=[]
+            for i in range(0,len(students)):
+                obj=studentEnrollment.objects.filter(userID=students[i]['userID'])[0]
+                s.append(obj.studentEnrollmentID)
+            students=studentEnrollment.objects.filter(studentEnrollmentID__in =s)
+            paginator = CustomPagination()
+            response = paginator.generate_response(students,studentEnrollmentSerializer,request)
+            userRoleId = []
+            for i in range(0,len(response.data['results'])):
+                userRoleId.append(response.data['results'][i]['userID']['userID'])
+                lists = UserRole.objects.filter(userID__in=userRoleId)
+                serializer = UserRoleSerializer(lists,many=True)
+            return Response({
+                "StudData":response.data,
+                "RoleData":serializer.data
+            })
+        except Exception as e:
+            return Response(e,status=500)
+
+class GetAllRegisteredStudentsSchoolWise(APIView):
+    authentication_classes = (TokenAuthentication, )
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self,request,**kwargs):
+        try:
+            Coordinators = UserRoleLocation.objects.filter(locationObjectID=kwargs['schoolID'],locationTypeCodeID='109001')
+            CoordinatorID=[]
+            for i in range(0,len(Coordinators)):
+                CoordinatorID.append(Coordinators[i].userRoleID.userRoleID)
+            CoordinatorsRoleID = UserRole.objects.filter(userRoleID__in = CoordinatorID)
+            s=[]
+            print(CoordinatorsRoleID)
+            for i in range(0,len(CoordinatorsRoleID)):
+                obj = User.objects.filter(created_by = CoordinatorsRoleID[i].userID.loginID)
+                for j in range(0,len(obj)):
+                    s.append(obj[j].userID)
+            RoleID = Role.objects.get(RoleName='Student')
+            students= UserRole.objects.filter(userID__in =s,RoleID=RoleID).order_by('-userRoleID')
+            paginator = CustomPagination()
+            response = paginator.generate_response(students,UserRoleSerializer,request)
+            return Response({
+                "StudData":response.data,
+            })
+        except Exception as e:
+            return Response(e,status=500)
+
 
 class RemoveParticipants(APIView):            #Remove Participants API
     authentication_classes = (TokenAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self,requests):
-        studentList = requests.data['studentList']
-        for i in range(0,len(studentList)):
-            studobj = studentEnrollment.objects.get(studentEnrollmentID=studentList[i])
-            studobj.delete()
-        return Response(status=200)
+        try:
+            studentList = requests.data['studentList']
+            for i in range(0,len(studentList)):
+                studobj = studentEnrollment.objects.get(studentEnrollmentID=studentList[i])
+                studobj.delete()
+            return Response(status=200)
+        except Exception as e:
+            return Response(e,status=500)
 
 class RollbackQuestion(APIView):                 #Rollback process for QuesInsert API
     authentication_classes = (TokenAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self,requests):
-        QuesID = question.objects.all().last()
-        if questionTranslation.objects.filter(questionID=QuesID.questionID).exists()== True and correctOption.objects.filter(questionTranslationID=questionTranslation.objects.filter(questionID=QuesID.questionID)[0].questionTranslationID).exists()==True:
-            return Response(status=200)
-        else:
-            if questionTranslation.objects.filter(questionID=QuesID.questionID).exists()== False:
-                if Image.objects.filter(ObjectID=QuesID.questionID,ImageTypeCodeID=code.objects.get(codeName='ImageQuestion').codeID).exists()==True:
-                    imglist = Image.objects.filter(ObjectID=QuesID.questionID,ImageTypeCodeID=code.objects.get(codeName='ImageQuestion').codeID)
-                    for i in range(0,len(imglist)):
-                        imglist[i].delete()
-                if Image.objects.filter(ObjectID=QuesID.questionID,ImageTypeCodeID=code.objects.get(codeName='ImageAnsExplanation').codeID).exists()==True:
-                    imglist = Image.objects.filter(ObjectID=QuesID.questionID,ImageTypeCodeID=code.objects.get(codeName='ImageAnsExplanation').codeID)
-                    for i in range(0,len(imglist)):
-                        imglist[i].delete()
-                if QuestionAge.objects.filter(questionID=QuesID.questionID).exists()==True:
-                    agelist = QuestionAge.objects.filter(questionID=QuesID.questionID)
-                    for i in range(0,len(agelist)):
-                        agelist[i].delete()
-                QuesID.delete()
+        try:
+            QuesID = question.objects.all().last()
+            if questionTranslation.objects.filter(questionID=QuesID.questionID).exists()== True and correctOption.objects.filter(questionTranslationID=questionTranslation.objects.filter(questionID=QuesID.questionID)[0].questionTranslationID).exists()==True:
+                return Response(status=200)
             else:
-                 if questionTranslation.objects.filter(questionID=QuesID.questionID).exists()== True and correctOption.objects.filter(questionTranslationID=questionTranslation.objects.filter(questionID=QuesID.questionID)[0].questionTranslationID).exists()==False:
-                     if Image.objects.filter(ObjectID=QuesID.questionID, ImageTypeCodeID=code.objects.get(
-                             codeName='ImageQuestion').codeID).exists() == True:
-                         imglist = Image.objects.filter(ObjectID=QuesID.questionID, ImageTypeCodeID=code.objects.get(
-                             codeName='ImageQuestion').codeID)
-                         for i in range(0, len(imglist)):
-                             imglist[i].delete()
-                     if Image.objects.filter(ObjectID=QuesID.questionID, ImageTypeCodeID=code.objects.get(
-                             codeName='ImageAnsExplanation').codeID).exists() == True:
-                         imglist = Image.objects.filter(ObjectID=QuesID.questionID, ImageTypeCodeID=code.objects.get(
-                             codeName='ImageAnsExplanation').codeID)
-                         for i in range(0, len(imglist)):
-                             imglist[i].delete()
-                     if QuestionAge.objects.filter(questionID=QuesID.questionID).exists() == True:
-                         agelist = QuestionAge.objects.filter(questionID=QuesID.questionID)
-                         for i in range(0, len(agelist)):
-                             agelist[i].delete()
-                     quesTrans = questionTranslation.objects.filter(questionID=QuesID.questionID)
-                     quesTrans[0].delete()
-                     if option.objects.filter(questionID = QuesID.questionID).exists()==True:
-                         optlist = option.objects.filter(questionID = QuesID.questionID)
-                         for i in range(0,len(optlist)):
-                            if optionTranslation.objects.filter(optionID=optlist[i].optionID).exists() == True:
-                                optionTranslation.objects.filter(optionID=optlist[i].optionID)[0].delete()
-                            if Image.objects.filter(ObjectID=optlist[i].optionID,ImageTypeCodeID=code.objects.get(codeName='ImageOption').codeID).exists()==True:
-                                Image.objects.filter(ObjectID=optlist[i].optionID,ImageTypeCodeID=code.objects.get(codeName='ImageOption').codeID)[0].delete()
-                            optlist[i].delete()
-                     QuesID.delete()
-        return Response(status=200)
+                if questionTranslation.objects.filter(questionID=QuesID.questionID).exists()== False:
+                    if Image.objects.filter(ObjectID=QuesID.questionID,ImageTypeCodeID=code.objects.get(codeName='ImageQuestion').codeID).exists()==True:
+                        imglist = Image.objects.filter(ObjectID=QuesID.questionID,ImageTypeCodeID=code.objects.get(codeName='ImageQuestion').codeID)
+                        for i in range(0,len(imglist)):
+                            imglist[i].delete()
+                    if Image.objects.filter(ObjectID=QuesID.questionID,ImageTypeCodeID=code.objects.get(codeName='ImageAnsExplanation').codeID).exists()==True:
+                        imglist = Image.objects.filter(ObjectID=QuesID.questionID,ImageTypeCodeID=code.objects.get(codeName='ImageAnsExplanation').codeID)
+                        for i in range(0,len(imglist)):
+                            imglist[i].delete()
+                    if QuestionAge.objects.filter(questionID=QuesID.questionID).exists()==True:
+                        agelist = QuestionAge.objects.filter(questionID=QuesID.questionID)
+                        for i in range(0,len(agelist)):
+                            agelist[i].delete()
+                    QuesID.delete()
+                else:
+                     if questionTranslation.objects.filter(questionID=QuesID.questionID).exists()== True and correctOption.objects.filter(questionTranslationID=questionTranslation.objects.filter(questionID=QuesID.questionID)[0].questionTranslationID).exists()==False:
+                         if Image.objects.filter(ObjectID=QuesID.questionID, ImageTypeCodeID=code.objects.get(
+                                 codeName='ImageQuestion').codeID).exists() == True:
+                             imglist = Image.objects.filter(ObjectID=QuesID.questionID, ImageTypeCodeID=code.objects.get(
+                                 codeName='ImageQuestion').codeID)
+                             for i in range(0, len(imglist)):
+                                 imglist[i].delete()
+                         if Image.objects.filter(ObjectID=QuesID.questionID, ImageTypeCodeID=code.objects.get(
+                                 codeName='ImageAnsExplanation').codeID).exists() == True:
+                             imglist = Image.objects.filter(ObjectID=QuesID.questionID, ImageTypeCodeID=code.objects.get(
+                                 codeName='ImageAnsExplanation').codeID)
+                             for i in range(0, len(imglist)):
+                                 imglist[i].delete()
+                         if QuestionAge.objects.filter(questionID=QuesID.questionID).exists() == True:
+                             agelist = QuestionAge.objects.filter(questionID=QuesID.questionID)
+                             for i in range(0, len(agelist)):
+                                 agelist[i].delete()
+                         quesTrans = questionTranslation.objects.filter(questionID=QuesID.questionID)
+                         quesTrans[0].delete()
+                         if option.objects.filter(questionID = QuesID.questionID).exists()==True:
+                             optlist = option.objects.filter(questionID = QuesID.questionID)
+                             for i in range(0,len(optlist)):
+                                if optionTranslation.objects.filter(optionID=optlist[i].optionID).exists() == True:
+                                    optionTranslation.objects.filter(optionID=optlist[i].optionID)[0].delete()
+                                if Image.objects.filter(ObjectID=optlist[i].optionID,ImageTypeCodeID=code.objects.get(codeName='ImageOption').codeID).exists()==True:
+                                    Image.objects.filter(ObjectID=optlist[i].optionID,ImageTypeCodeID=code.objects.get(codeName='ImageOption').codeID)[0].delete()
+                                optlist[i].delete()
+                         QuesID.delete()
+            return Response(status=200)
+        except Exception as e:
+            return Response(e,status=500)
 
 class RollbackQuestionTranslation(APIView):  # Rollback process for Translation API
         authentication_classes = (TokenAuthentication, )
         permission_classes = (permissions.IsAuthenticated,)
 
         def get(self, requests):
-            quesTransID = questionTranslation.objects.all().last()
-            if correctOption.objects.filter(questionTranslationID=quesTransID.questionTranslationID).exists() == True:
+            try:
+                quesTransID = questionTranslation.objects.all().last()
+                if correctOption.objects.filter(questionTranslationID=quesTransID.questionTranslationID).exists() == True:
+                    return Response(status=200)
+                else:
+                    optlist = option.objects.filter(questionID=quesTransID.questionID)
+                    language = quesTransID.languageCodeID
+                    for i in range(0, len(optlist)):
+                        if optionTranslation.objects.filter(optionID=optlist[i].optionID,
+                                                            languageCodeID=language).exists() == True:
+                            optionTranslation.objects.filter(optionID=optlist[i].optionID, languageCodeID=language)[
+                                0].delete()
+                    quesTransID.delete()
                 return Response(status=200)
-            else:
-                optlist = option.objects.filter(questionID=quesTransID.questionID)
-                language = quesTransID.languageCodeID
-                for i in range(0, len(optlist)):
-                    if optionTranslation.objects.filter(optionID=optlist[i].optionID,
-                                                        languageCodeID=language).exists() == True:
-                        optionTranslation.objects.filter(optionID=optlist[i].optionID, languageCodeID=language)[
-                            0].delete()
-                quesTransID.delete()
-            return Response(status=200)
+            except Exception as e:
+                return Response(e,status=500)
+
+
