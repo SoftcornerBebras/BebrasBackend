@@ -40,8 +40,7 @@ urlpatterns = [
     re_path('getRegisteredBy/(?P<loginID>[\w.@+-]+)/$',views.GetRegisteredBy.as_view()),
     re_path('viewUserRoleLocation/(?P<schoolID>\d+)&(?P<type>[\w.@+-]+)/$', views.GetUserRoleLocationPageView.as_view()),
     re_path('getUserRoleLocation/(?P<schoolID>\d+)&(?P<type>[\w.@+-]+)/$', views.GetUserRoleLocationView.as_view()),
-    re_path('getUsersYearWise/(?P<year>[\w.@+-]+)/$',views.GetUsersYearWise.as_view()),
-    path('getUserYears/',views.GetDistinctUserYears.as_view()),
+    path('getUserSearch/',views.UserSearch.as_view()),
 
     #user portal
     path('registerteacher', TeacherRegisterAPI.as_view()),
