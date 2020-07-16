@@ -58,6 +58,7 @@ urlpatterns = [
     path('', include('knox.urls')),
     path('Alluserresult',     AllUserResultViewAPI.as_view()),
     path('userresult',     UserResultViewAPI.as_view()),
+    path('usersenrolled',     AllStudentsEnrolledViewAPI.as_view()),
     path('userdata', UserViewAPI.as_view()),
     path('logout-page', knox_views.LogoutView.as_view(), name='knox_logout')
 ]
