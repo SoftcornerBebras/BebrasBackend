@@ -33,17 +33,17 @@ urlpatterns = [
     path('getSchoolSearches/',cviews.SchoolSearch.as_view()),
     re_path('userProfileSchool/(?P<loginID>[\w.@+-]+)/$',cviews.SchoolPTimeline.as_view()),
 
+ 
     #userportal
     path('cmpnames', CompetitionNameAPI.as_view()),
     path('cmpnamesforcertificate', CompetitionNameForCertificatesAPI.as_view()),
     path('countrynames', CountryNameAPI.as_view()),
-    path('schoolnames', SchoolNameAPI.as_view()),
     path('schoolclasses', SchoolClassesAPI.as_view()),
     path('statenames', StateNameAPI.as_view()),
     path('districtnames', DistrictNameAPI.as_view()),
     path('schoolGroupnames', SchoolGroupAPI.as_view()),
-    path('AgeGroupnames', AgeGroupNameAPI.as_view()),
     path('getschooltypenames', SchoolTypeName.as_view()),
     path('getgendernames', GenderName.as_view()),
+
 
 ]
