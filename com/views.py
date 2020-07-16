@@ -383,7 +383,7 @@ class GetGroup(APIView):                              #Get School Groups API
     def get(self,request):
        try:
            group= codeGroup.objects.filter(codeGroupName="schoolGroup")
-           groups=code.objects.filter(codeGroupID=group[0].codeGroupID).order_by('codeName').exclude(codeName='Others')
+           groups=code.objects.filter(codeGroupID=group[0].codeGroupID).order_by('codeName').exclude(codeName='Other')
            SchoolGrps = []
            if len(groups) != 0:
                for i in range(0,len(groups)):
