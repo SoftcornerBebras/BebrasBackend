@@ -28,37 +28,42 @@ class LoginView(KnoxLogin):                        #Login ApI for Admin and Auth
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request):
-        serializer = LogSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data["user"]
-        if user!= None:
-            update_last_login(None, user)
-            s = UserSerializer(user).data['userID']
-            s1 = (UserRole.objects.filter(userID=s)).values('RoleID')
-            approved = code.objects.get(codeID=user.is_active.codeID)
-            if approved.codeName=="approved" and s1:
-                s2=s1[0]['RoleID']
-                if (s2==1 or s2==4):
-                    return Response({
-                        "user": UserSerializer(user).data,
-                        "token": AuthToken.objects.create(user)[1],
-                        "expiry" : knox_settings.TOKEN_TTL
-                    })
+        try:
+            serializer = LogSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            user = serializer.validated_data["user"]
+            if user!= None:
+                update_last_login(None, user)
+                s = UserSerializer(user).data['userID']
+                s1 = (UserRole.objects.filter(userID=s)).values('RoleID')
+                approved = code.objects.get(codeID=user.is_active.codeID)
+                if approved.codeName=="approved" and s1:
+                    s2=s1[0]['RoleID']
+                    if (s2==1 or s2==4):
+                        return Response({
+                            "user": UserSerializer(user).data,
+                            "token": AuthToken.objects.create(user)[1],
+                            "expiry" : knox_settings.TOKEN_TTL
+                        })
+                    else:
+                        return Response("User is not an Admin")
                 else:
                     return Response("User is not an Admin")
             else:
-                return Response("User is not an Admin")
-        else:
-            return Response("Invalid User")
-
+                return Response("Invalid User")
+        except Exception as e:
+            return Response(e,status=500)
 
 class LogoutView(KnoxLogout):                        #Logout API for Admin and Author
     authentication_classes = (TokenAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request):
-        request._auth.delete()
-        return Response(status=204)
+        try:
+            request._auth.delete()
+            return Response(status=204)
+        except Exception as e:
+            return Response(e,status=500)
 
 
 class UpdateView(APIView):                          #User Details- Update API
@@ -66,11 +71,14 @@ class UpdateView(APIView):                          #User Details- Update API
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self,request,**kwargs):
-         id = UserRole.objects.get(userRoleID = kwargs['userRoleID'])
-         serializers = UserRoleInsertUpdateSerializer(instance=id, data = request.data,partial=True)
-         serializers.is_valid(raise_exception=True)
-         serializers.save(modified_on = datetime.now().date() )
-         return Response(serializers.data)
+         try:
+             id = UserRole.objects.get(userRoleID = kwargs['userRoleID'])
+             serializers = UserRoleInsertUpdateSerializer(instance=id, data = request.data,partial=True)
+             serializers.is_valid(raise_exception=True)
+             serializers.save(modified_on = datetime.now().date() )
+             return Response(serializers.data)
+         except Exception as e:
+            return Response(e,status=500)
 
 
 class UpdateProfileView(APIView):                 #Update API Admin and Author Profile
@@ -78,11 +86,14 @@ class UpdateProfileView(APIView):                 #Update API Admin and Author P
      permission_classes = (permissions.IsAuthenticated,)
 
      def post(self,request,**kwargs):
-         id = User.objects.get(userID = kwargs['userID'])
-         serializers = UserInsertUpdateSerializer(instance=id, data = request.data,partial=True)
-         serializers.is_valid(raise_exception=True)
-         serializers.save(modified_on = datetime.now().date() )
-         return Response(serializers.data)
+         try:
+             id = User.objects.get(userID = kwargs['userID'])
+             serializers = UserInsertUpdateSerializer(instance=id, data = request.data,partial=True)
+             serializers.is_valid(raise_exception=True)
+             serializers.save(modified_on = datetime.now().date() )
+             return Response(serializers.data)
+         except Exception as e:
+            return Response(e,status=500)
 
 
 class UserAdminView(APIView):                   #Get All Admins API
@@ -90,10 +101,13 @@ class UserAdminView(APIView):                   #Get All Admins API
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self,request):
-        roleref = Role.objects.get(RoleName='Admin')
-        employee1 = UserRole.objects.filter(RoleID=roleref.RoleID)
-        serializer = UserRoleSerializer(employee1,many=True)
-        return Response(serializer.data)
+        try:
+            roleref = Role.objects.get(RoleName='Admin')
+            employee1 = UserRole.objects.filter(RoleID=roleref.RoleID)
+            serializer = UserRoleSerializer(employee1,many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 
 class SingleUserProfile(APIView):                   #Get Details of Single User API
@@ -101,32 +115,25 @@ class SingleUserProfile(APIView):                   #Get Details of Single User 
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self,request,**kwargs):
-        employee1 = User.objects.filter(loginID = kwargs['loginID'])
-        serializer = UserSerializer(employee1,many=True)
-        return Response(serializer.data)
-
+        try:
+            employee1 = User.objects.filter(loginID = kwargs['loginID'])
+            serializer = UserSerializer(employee1,many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class UserPageView(APIView):                       #Get All Users API
     authentication_classes = (TokenAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self,request):
-        queryset = UserRole.objects.all()
-        paginator = CustomPagination()
-        response = paginator.generate_response(queryset,UserRoleSerializer,request)
-        return Response(response.data)
-
-class GetUsersYearWise(APIView):                       #Get YearWise Users API
-    authentication_classes = (TokenAuthentication, )
-    permission_classes = (permissions.IsAuthenticated,)
-
-    def get(self,request,**kwargs):
-        users = User.objects.filter(created_on__icontains = kwargs['year']).values_list('userID', flat=True)
-        usersIDlist = list(users)
-        queryset = UserRole.objects.filter(userID__in = usersIDlist)
-        paginator = CustomPagination()
-        response = paginator.generate_response(queryset,UserRoleSerializer,request)
-        return Response(response.data)
+        try:
+            queryset = UserRole.objects.all().order_by('-userRoleID')
+            paginator = CustomPagination()
+            response = paginator.generate_response(queryset,UserRoleSerializer,request)
+            return Response(response.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class InsertUserView(APIView):          #Insert New Admin and Author API
     authentication_classes = (TokenAuthentication, )
@@ -157,11 +164,14 @@ class InsertUserView(APIView):          #Insert New Admin and Author API
         server.quit()
 
     def post(self, request):
-        serializer = UserRoleInsertUpdateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        self.SendMail(request)
-        return Response(status = status.HTTP_200_OK)
+        try:
+            serializer = UserRoleInsertUpdateSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            self.SendMail(request)
+            return Response(status = status.HTTP_200_OK)
+        except Exception as e:
+            return Response(e,status=500)
 
 class ResetPasswordView(APIView):          #API for Reset Password
 
@@ -197,94 +207,130 @@ class ResetPasswordView(APIView):          #API for Reset Password
         server.quit()
 
     def post(self, request, *args, **kwargs):
-        associated_users = User.objects.filter(loginID=request.data['emailID'])
-        if associated_users.exists():
-            for user in associated_users:
-                self.reset_password(user, request)
-            return Response("Email sent to the registered email id")
-        else:
-            return Response("Error")
+        try:
+            associated_users = User.objects.filter(loginID=request.data['emailID'])
+            if associated_users.exists():
+                for user in associated_users:
+                    self.reset_password(user, request)
+                return Response("Email sent to the registered email id")
+            else:
+                return Response("Error")
+        except Exception as e:
+            return Response(e,status=500)
 
 class ConfirmResetPasswordView(APIView):                     #API for Connfirm Password
 
     def post(self, request, uidb64=None, token=None, *arg, **kwargs):
-        UserModel = get_user_model()
-        assert uidb64 is not None and token is not None
         try:
-            uid = urlsafe_base64_decode(uidb64)
-            user = UserModel._default_manager.get(pk=uid)
-        except (TypeError, ValueError, OverflowError, UserModel.DoesNotExist):
-            user = None
-        if user is not None and default_token_generator.check_token(user, token):
-            id = User.objects.get(loginID=user)
-            serializers = PasswordResetSerializer(id, data=request.data, partial=True)
-            serializers.is_valid(raise_exception=True)
-            saved = serializers.save(modified_on=datetime.now().date())
-            if saved:
-                return Response(status=200)
+            UserModel = get_user_model()
+            assert uidb64 is not None and token is not None
+            try:
+                uid = urlsafe_base64_decode(uidb64)
+                user = UserModel._default_manager.get(pk=uid)
+            except (TypeError, ValueError, OverflowError, UserModel.DoesNotExist):
+                user = None
+            if user is not None and default_token_generator.check_token(user, token):
+                id = User.objects.get(loginID=user)
+                serializers = PasswordResetSerializer(id, data=request.data, partial=True)
+                serializers.is_valid(raise_exception=True)
+                saved = serializers.save(modified_on=datetime.now().date())
+                if saved:
+                    return Response(status=200)
+                else:
+                    return Response(status=501)
             else:
-                return Response(status=501)
-        else:
-            return Response(status=410)
+                return Response(status=410)
+        except Exception as e:
+            return Response(e,status=500)
 
 class RoleListView(APIView):                 #Get All Roles API
      authentication_classes = (TokenAuthentication, )
      permission_classes = (permissions.IsAuthenticated,)
 
      def get(self,request):
-        employee1 = Role.objects.all()
-        serializer = RoleInsertUpdateSerializer(employee1,many=True)
-        return Response(serializer.data)
+        try:
+            employee1 = Role.objects.all().order_by('RoleName')
+            serializer = RoleInsertUpdateSerializer(employee1,many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class RoleListAdd(APIView):                    #Get All Roles for Insert User API
      authentication_classes = (TokenAuthentication, )
      permission_classes = (permissions.IsAuthenticated,)
 
      def get(self,request):
-        list = ['Admin','Author']
-        employee1 = Role.objects.filter(RoleName__in=list)
-        serializer = RoleInsertUpdateSerializer(employee1,many=True)
-        return Response(serializer.data)
+        try:
+            list = ['Admin','Author']
+            employee1 = Role.objects.filter(RoleName__in=list)
+            serializer = RoleInsertUpdateSerializer(employee1,many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class ChangePasswordView(APIView):              #API for Change Password
     authentication_classes = (TokenAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self,request):
-         serializer = PasswordChangeSerializer(data=request.data)
-         user = User.objects.get(loginID = request.data['loginID'])
-         if serializer.is_valid():
-            if not decrypt(user.password)==serializer.data.get('old_password'):
-                return Response({'old_password': ['Wrong password.']},
-                                status=status.HTTP_400_BAD_REQUEST)
-            user.password = encrypt(serializer.data.get('new_password'))
-            user.modified_on = datetime.now().date()
-            user.modified_by = request.data['loginID']
-            user.save()
-            return Response({'status': 'password set'}, status=status.HTTP_200_OK)
-         return Response(serializer.errors,
-                        status=status.HTTP_400_BAD_REQUEST)
-
+        try:
+             serializer = PasswordChangeSerializer(data=request.data)
+             user = User.objects.get(loginID = request.data['loginID'])
+             if serializer.is_valid():
+                if not decrypt(user.password)==serializer.data.get('old_password'):
+                    return Response({'old_password': ['Wrong password.']},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                user.password = encrypt(serializer.data.get('new_password'))
+                user.modified_on = datetime.now().date()
+                user.modified_by = request.data['loginID']
+                user.save()
+                return Response({'status': 'password set'}, status=status.HTTP_200_OK)
+             return Response(serializer.errors,
+                            status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetGenderView(APIView):                #Get All Gender API
     authentication_classes = (TokenAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self,request):
-        gender = codeGroup.objects.get(codeGroupName='gender')
-        gendertypes = code.objects.filter(codeGroupID=gender.codeGroupID)
-        serializer = CodeSerializer(gendertypes,many=True)
-        return Response(serializer.data)
-
+        try:
+            gender = codeGroup.objects.get(codeGroupName='gender')
+            gendertypes = code.objects.filter(codeGroupID=gender.codeGroupID).order_by('codeName')
+            serializer = CodeSerializer(gendertypes,many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class UserPTimeline(APIView):             #Get Single User Timeline API
     authentication_classes = (TokenAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, **kwargs):
-        usrdata=User.objects.filter(Q(created_by__startswith=kwargs['loginID']) | Q(modified_by__startswith=kwargs['loginID']))
-        serializer = UserSerializer(usrdata,many=True)
-        return Response(serializer.data)
+        try:
+            usrdata=User.objects.filter(Q(created_by__startswith=kwargs['loginID']) | Q(modified_by__startswith=kwargs['loginID']))
+            serializer = UserSerializer(usrdata,many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(e,status=500)
+
+class UserSearch(APIView):
+    authentication_classes = (TokenAuthentication, )
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self,request):
+        try:
+            feed = request.data['feed']
+            usrdata=User.objects.filter(Q(created_by__contains = feed) | Q(modified_by__contains = feed) | Q(username__contains = feed) | Q(loginID__contains = feed) | Q(created_on__contains = feed)).values_list('userID', flat=True)
+            role = Role.objects.filter(Q(RoleName__contains = feed)).values_list('RoleID', flat=True)
+            userID = list(usrdata)
+            roleID = list(role)
+            query = UserRole.objects.filter(Q(userID__in = userID)| Q(RoleID__in = roleID))
+            serializer = UserRoleSerializer(query,many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 
 class GetUserRoleLocationPageView(APIView):            #View All users according to type API
@@ -292,68 +338,67 @@ class GetUserRoleLocationPageView(APIView):            #View All users according
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self,request,**kwargs):
-        type=kwargs['type']
-        if(type=='school'):
-            locationType=code.objects.get(codeName='schoolID')
-            list=UserRoleLocation.objects.filter(locationObjectID=kwargs['schoolID'],locationTypeCodeID=locationType)
-            paginator = CustomPagination()
+        try:
+            type=kwargs['type']
+            if(type=='school'):
+                locationType=code.objects.get(codeName='schoolID')
+                list=UserRoleLocation.objects.filter(locationObjectID=kwargs['schoolID'],locationTypeCodeID=locationType).order_by('-userRoleLocationID')
+                paginator = CustomPagination()
 
-        elif(type=='state'):
-            locationType = code.objects.get(codeName='stateID')
-            list = UserRoleLocation.objects.filter(locationObjectID=kwargs['stateID'],
-                                                       locationTypeCodeID=locationType)
-            paginator = CustomPagination()
+            elif(type=='state'):
+                locationType = code.objects.get(codeName='stateID')
+                list = UserRoleLocation.objects.filter(locationObjectID=kwargs['stateID'],
+                                                           locationTypeCodeID=locationType).order_by('-userRoleLocationID')
+                paginator = CustomPagination()
 
-        elif(type=='country'):
-            locationType = code.objects.get(codeName='countryID')
-            list = UserRoleLocation.objects.filter(locationObjectID=kwargs['countryID'],
-                                                       locationTypeCodeID=locationType)
-            paginator = CustomPagination()
+            elif(type=='country'):
+                locationType = code.objects.get(codeName='countryID')
+                list = UserRoleLocation.objects.filter(locationObjectID=kwargs['countryID'],
+                                                           locationTypeCodeID=locationType).order_by('-userRoleLocationID')
+                paginator = CustomPagination()
 
-        response = paginator.generate_response(list,UserRoleLocationSerializer,request)
-        return Response(response.data)
-
+            response = paginator.generate_response(list,UserRoleLocationSerializer,request)
+            return Response(response.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetUserRoleLocationView(APIView):                    #Get all roles according to type API
     authentication_classes = (TokenAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self,request,**kwargs):
-        type=kwargs['type']
-        if(type=='school'):
-            locationType=code.objects.get(codeName='schoolID')
-            list=UserRoleLocation.objects.filter(locationObjectID=kwargs['schoolID'],locationTypeCodeID=locationType)
+        try:
+            type=kwargs['type']
+            if(type=='school'):
+                locationType=code.objects.get(codeName='schoolID')
+                list=UserRoleLocation.objects.filter(locationObjectID=kwargs['schoolID'],locationTypeCodeID=locationType)
 
-        elif(type=='state'):
-            locationType = code.objects.get(codeName='stateID')
-            list = UserRoleLocation.objects.filter(locationObjectID=kwargs['stateID'],
-                                                       locationTypeCodeID=locationType)
+            elif(type=='state'):
+                locationType = code.objects.get(codeName='stateID')
+                list = UserRoleLocation.objects.filter(locationObjectID=kwargs['stateID'],
+                                                           locationTypeCodeID=locationType)
 
-        elif(type=='country'):
-            locationType = code.objects.get(codeName='countryID')
-            list = UserRoleLocation.objects.filter(locationObjectID=kwargs['countryID'],
-                                                       locationTypeCodeID=locationType)
+            elif(type=='country'):
+                locationType = code.objects.get(codeName='countryID')
+                list = UserRoleLocation.objects.filter(locationObjectID=kwargs['countryID'],
+                                                           locationTypeCodeID=locationType)
 
-        serializers = UserRoleLocationSerializer(list,many=True)
-        return Response(serializers.data)
-
+            serializers = UserRoleLocationSerializer(list,many=True)
+            return Response(serializers.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 class GetRegisteredBy(APIView):                          #Get Details of teacher Registered School API
     authentication_classes = (TokenAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self,request,**kwargs):
-        lists=User.objects.filter(loginID=kwargs['loginID'])
-        serializer= UserSerializer(lists,many=True)
-        return Response(serializer.data)
-
-class GetDistinctUserYears(APIView):                          #Get Distinct User Years API
-      authentication_classes = (TokenAuthentication, )
-      permission_classes = (permissions.IsAuthenticated,)
-
-      def get(self,request):
-        lists=User.objects.dates('created_on','year')
-        return Response({"data":lists})
+        try:
+            lists=User.objects.filter(loginID=kwargs['loginID'])
+            serializer= UserSerializer(lists,many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(e,status=500)
 
 
 
