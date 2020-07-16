@@ -22,8 +22,8 @@ import six
 import os
 from os import walk
 import glob
-import win32com.client
-import pythoncom
+# import win32com.client
+# import pythoncom
 from django.conf import settings
 from pptx import Presentation
 from datetime import datetime
