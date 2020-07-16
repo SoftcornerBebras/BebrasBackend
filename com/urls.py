@@ -30,6 +30,7 @@ urlpatterns = [
     re_path('getDistrictStateWise/(?P<stateID>\d+)/$',cviews.GetDistrictStateWise.as_view()),
     path('getSchoolGroups/',cviews.GetGroup.as_view()),
     path('getSchoolTypes/',cviews.GetSchoolType.as_view()),
+    path('getSchoolSearches/',cviews.SchoolSearch.as_view()),
     re_path('userProfileSchool/(?P<loginID>[\w.@+-]+)/$',cviews.SchoolPTimeline.as_view()),
 
     #userportal
