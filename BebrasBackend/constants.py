@@ -27,3 +27,4 @@ schoolGroupID=110
 schooltype=101
 gender=100
 optiontext={"option":""}
+domain=104
