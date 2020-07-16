@@ -20,31 +20,12 @@ class CountryNameAPI(APIView):
     def get(self, request, format=None):
       try:
         countries = Countries.objects.all().values_list('nicename', flat=True)
+        countries=list(countries)
+        countries.sort()
         return JsonResponse({"countries":list(countries)},safe=True)
       except Exception as e:
         return HttpResponse(e,status=404)
   # Get All School Names API
-class SchoolNameAPI(APIView):
-
-    permission_classes = [
-      permissions.IsAuthenticated,
-    ]
-    def get(self, request, format=None):
-      try:
-        print(request.user.userID)
-        usrrole=UserRole.objects.get(userID=request.user.userID)
-        usrroleLocation=UserRoleLocation.objects.get(userRoleID=usrrole.userRoleID)
-
-        school_names = school.objects.filter(schoolID=usrroleLocation.locationObjectID)
-        if school_names:
-          address=Address.objects.get(addressID=school_names.addressID)
-          serializer=AddSchoolSerializer(school_names)
-
-          return JsonResponse({"schoolName":serializer.data,"city":address.city},safe=True)
-        else:
-          return Response("No schools in Database")
-      except Exception as e:
-        return HttpResponse(e,status=404)
 
   # Get All State Names API
 class StateNameAPI(APIView):
@@ -55,6 +36,8 @@ class StateNameAPI(APIView):
         print(request.data)
         country=Countries.objects.get(name=request.data['country'])
         states=States.objects.filter(countryID=country.countryID).values_list('name', flat=True)
+        states=list(states)
+        states.sort()
         return JsonResponse({"states":list(states)}, safe=False)
       except Exception as e:
         return HttpResponse(e,status=404)
@@ -95,38 +78,13 @@ class CompetitionNameForCertificatesAPI(APIView):
             if sclassid==int(request.data['class_id']):
                 cmpNames.append(data.competitionID.competitionName)
                 print(cmpNames)
-        cmpNames=list(set(cmpNames))
+        print(cmpNames)
+        cmpNames = list(dict.fromkeys(cmpNames))
+        cmpNames.reverse()
+        print(cmpNames)
         if len(cmpNames)==0:
           return Response("No competitions to show, either they are upcoming or not  finished!",status=404)
         return JsonResponse({"cmp_names":cmpNames}, safe=False)
-      except Exception as e:
-        return HttpResponse(e,status=404)
-class AgeGroupNameAPI(APIView):
-
-    permission_classes = [
-      permissions.IsAuthenticated,
-    ]
-
-    def post(self, request):
-      try:
-        print(request.data)
-        AgeNames={}
-        cmpageID=None
-        print(request.data['competitionName'])
-        compName=competition.objects.get(competitionName=request.data['competitionName'])
-        print(compName)
-        compAge=competitionAge.objects.filter(competitionID=compName.competitionID)
-        print(list(compAge))
-        for data in compAge:
-          if data.AgeGroupClassID.ClassID.classNo==request.data['class_id']:
-            print(data.AgeGroupClassID.AgeGroupID.AgeGroupName)
-            AgeNames['age_names']=data.AgeGroupClassID.AgeGroupID.AgeGroupName
-            cmpageID=data
-            print(AgeNames)
-            break
-        if len(AgeNames)==0:
-          return Response("No agegroups to show!",status=404)
-        return JsonResponse(AgeNames, safe=False)
       except Exception as e:
         return HttpResponse(e,status=404)
 class CompetitionNameAPI(APIView):
@@ -148,7 +106,7 @@ class CompetitionNameAPI(APIView):
             if sclassid==int(request.data['class_id']):
                 cmpNames.append(data.competitionID.competitionName)
 
-        cmpNames=list(set(cmpNames))
+        cmpNames = list(dict.fromkeys(cmpNames))
         print(cmpNames)
         if len(cmpNames)==0:
           return Response("No competitions to show, either they are upcoming or already finished!",status=404)
@@ -166,7 +124,9 @@ class DistrictNameAPI(APIView):
       try:
         state=States.objects.get(name=request.data['state'])
         districts=Districts.objects.filter(stateID=state.stateID).values_list('name', flat=True)
-        return JsonResponse({"districts":list(districts)}, safe=False)
+        districts=list(districts)
+        districts.sort()
+        return JsonResponse({"districts":(districts)}, safe=False)
       except Exception as e:
         return HttpResponse(e,status=404)
 class SchoolGroupAPI(APIView):
@@ -179,6 +139,9 @@ class SchoolGroupAPI(APIView):
         schoolGroupNames=[]
         for data in codes:
             schoolGroupNames.append(data.codeName)
+        schoolGroupNames.sort()
+        if "Other" in schoolGroupNames: schoolGroupNames.remove("Other")
+        schoolGroupNames.append("Other")
         return JsonResponse({"schoolGroups":schoolGroupNames},safe=True)
       except Exception as e:
         return HttpResponse(e,status=404)
@@ -189,7 +152,12 @@ class SchoolTypeName(APIView):
     def get(self, request, format=None):
       try:
         codes = code.objects.filter(codeGroupID=schooltype).values_list('codeName', flat=True)
-        return JsonResponse({"schooltypenames":list(codes)},safe=True)
+        codes=list(codes)
+        print(codes)
+        codes.sort()
+        if "Other" in codes: codes.remove("Other")
+        codes.append("Other")
+        return JsonResponse({"schooltypenames":codes},safe=True)
       except Exception as e:
         return HttpResponse(e,status=404)
 class GenderName(APIView):
@@ -199,6 +167,10 @@ class GenderName(APIView):
     def get(self, request, format=None):
       try:
         codes = code.objects.filter(codeGroupID=gender).values_list('codeName', flat=True)
-        return JsonResponse({"gender":list(codes)},safe=True)
+        codes=list(codes)
+        codes.sort()
+        if "Other" in codes: codes.remove("Other")
+        codes.append("Other")
+        return JsonResponse({"gender":(codes)},safe=True)
       except Exception as e:
         return HttpResponse(e,status=404)
