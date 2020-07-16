@@ -68,11 +68,13 @@ urlpatterns = [
      path('rollBackQuestionTranslation/',cpviews.RollbackQuestionTranslation.as_view()),
      #userportal
 
+    path('getoptionAPI', getoptionAPI.as_view()),
     path('cmpnames', getCompetitionAPI.as_view()),
     path('getcmp', getCmpQuestionAPI.as_view()),
     path('getcmpResults', getCmpResultsAPI.as_view()),
     path('getcmpnamesResults', getCompetitionsNamesForResultAPI.as_view()),
     path('getcmpnamesAnalysis', getCompetitionsNamesForAnalysisAPI.as_view()),
+    path('savedstudentResponse', getAlreadySavedResponse.as_view()),
     path('studentResponse', studentResponseAPI.as_view()),
     path('calcTotalScore', calcTotalScore.as_view()),
     path('getLang', LanguageAPI.as_view()),
