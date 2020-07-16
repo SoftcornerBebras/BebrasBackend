@@ -36,7 +36,7 @@ class LoginAPI(generics.GenericAPIView):
       try:
         print(request.data)
         serializer = LoginSerializer(data=request.data)
-        print(request.data['loginID'])
+        request.data['loginID']=request.data['loginID'].strip()
         if serializer.is_valid():
           try:
                 user1=User.objects.get(loginID=request.data['loginID'])
@@ -337,12 +337,13 @@ class StudentBulkRegisterAPI(generics.GenericAPIView):
               responsedata.append({ "firstName":Firstname,"lastName":Lastname,"username":username,
                                 "loginID":loginID,"password":errors})
 
-            return JsonResponse(responsedata, safe=False,status=200)
+            
           except:
             errors=''
             for i in serializer.errors :
                   errors=errors+ i +' '+ str(serializer.errors[i])
             return  HttpResponse(errors,status=400)
+        return JsonResponse(responsedata, safe=False,status=200)
       except:
         return HttpResponse("Can't register please try again",status=400)
 
@@ -354,7 +355,7 @@ class TeacherRegistrationAPI(generics.GenericAPIView):
 
     def post(self, request):
       try:
-        print("Received a request ",request.data)
+        print("Received a request ",request.data,request.data['password'])
         pass_encrypt=encrypt(request.data['password'])
         request.data['password']=pass_encrypt
         Code=code.objects.get(codeName=request.data['gender'])
@@ -395,7 +396,7 @@ class TeacherRegistrationAPI(generics.GenericAPIView):
               errors=errors+ i +' '+ str(serializer.errors[i])
               errors="Error : "+errors
           raise_exception=True
-          return JsonResponse(errors,status=400)
+          return JsonResponse(errors,status=400,safe=False)
       except Exception as e:
         return HttpResponse(e,status=404)
 
@@ -404,12 +405,22 @@ class UserViewAPI(APIView):
     permission_classes = [permissions.IsAuthenticated, ]
     serializer_class = UserViewSerializer
 
-    def get(self, request, format=None):
+    def post(self, request, format=None):
       try:
         current_user = request.user
         print("Current user ",current_user.userID)
+        comp=competition.objects.get(competitionName=request.data['competitionName'])
+        compage=competitionAge.objects.filter(competitionID=comp).values_list('competitionAgeID', flat=True)
+        compage=list(compage)
         userroles=UserRole.objects.filter(RoleID=StudentRoleID).values_list('userID', flat=True)
         user_ids=list(userroles)
+        user_ids = User.objects.filter(userID__in=user_ids,created_by=current_user.loginID).values_list('userID', flat=True)
+        user_ids=list(user_ids)
+        studentsenrolled=studentEnrollment.objects.filter(userID__in=user_ids,competitionAgeID__in=compage).values_list('userID', flat=True)
+        studentsenrolled=list(studentsenrolled)
+        print(len(studentsenrolled),len(user_ids))
+        user_ids=[x for x in user_ids if x not in studentsenrolled]
+        print("finally",len(user_ids))
         users = User.objects.filter(userID__in=user_ids,created_by=current_user.loginID)
         serializer = UserViewSerializer(users, many=True)
         return JsonResponse({"users":serializer.data}, safe=False)
@@ -533,6 +544,35 @@ class UserExcelAPI(APIView):
           data['password']=pass_decrypt
           print(data)
         return JsonResponse({"users":serializer.data}, safe=False)
+      except Exception as e:
+        return HttpResponse(e,status=401)
+class AllStudentsEnrolledViewAPI(APIView):
+    permission_classes = [permissions.IsAuthenticated, ]
+    serializer_class = UserViewSerializer
+    def get(self, request, format=None):
+      try:
+
+        print("Currently logged in ",request.user.userID)
+        userroles=UserRole.objects.filter(RoleID=StudentRoleID).values_list('userID', flat=True)
+        test_ids=list(userroles)
+        users = User.objects.filter(userID__in=test_ids,created_by=request.user.loginID)
+        response=[]
+        for current_user in users:
+          try:
+            cmps=studentEnrollment.objects.filter(userID=current_user.userID)
+            for c in cmps:
+                userdata={}
+                userdata['loginID']=current_user.loginID
+                userdata['username']=current_user.username
+                userdata['competitionName']=c.competitionAgeID.competitionID.competitionName
+                userdata['ageGroup']=c.competitionAgeID.AgeGroupClassID.AgeGroupID.AgeGroupName
+                userdata['class']=c.schoolClassID.classNumber
+                userdata['year']=c.competitionAgeID.competitionID.startDate.year
+                response.append(userdata)
+          except studentEnrollment.DoesNotExist:
+            print("Not enrolled")
+        response = sorted(response, key=lambda k: (-k['year'])) 
+        return JsonResponse(response, safe=False)
       except Exception as e:
         return HttpResponse(e,status=401)
 class ResetPasswordView(APIView):
