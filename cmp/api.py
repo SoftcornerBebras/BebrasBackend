@@ -39,6 +39,26 @@ from PyPDF2 import PdfFileWriter, PdfFileReader
 import shutil
 
 
+
+class getoptionAPI(generics.GenericAPIView):
+    permission_classes = [
+      permissions.AllowAny,
+    ]
+    def get(self, request):
+      try:
+        my_things = optionTranslation.objects.filter(translationO__contains='"option":"૫"')
+        print(len(my_things))
+        jsonobj={"option":"16A"}
+        options=optionTranslation.objects.filter(translationO={'option': 'A'})
+        print(len(options))
+        opti=optionTranslation.objects.get(translationO=jsonobj)
+        print(opti)
+        opt=OptionTranslationView(opti)
+        return  JsonResponse({"competitionnames":opt.data}, safe=False)
+      except Exception as e:
+        return HttpResponse(e,status=404)
+
+
 class getCompetitionAPI(generics.GenericAPIView):
     permission_classes = [
       permissions.IsAuthenticated,
@@ -179,7 +199,9 @@ class getCmpQuestionAPI(generics.GenericAPIView):
            
               optiondata=[]
               for optiond in optiontranslation:
-                  optiondata.append(optiond.translationO['option'])
+                  optionjson={"optionTranslationID":optiond.optionTranslationID,"option":optiond.translationO['option']}
+                  print(optionjson)
+                  optiondata.append(optionjson)
               questiondata['options']=optiondata
               response.append(questiondata)
             elif(quest.questionID.questionTypeCodeID.codeID==question_with_images):
@@ -200,7 +222,10 @@ class getCmpQuestionAPI(generics.GenericAPIView):
                 questiondata['images_of_option']=imagop
               optiondata=[]
               for optiond in optiontranslation:
-                  optiondata.append(optiond.translationO['option'])
+                  optionjson={"optionTranslationID":optiond.optionTranslationID,"option":optiond.translationO['option']}
+                  print(optionjson)
+                  optiondata.append(optionjson)
+                  # optiondata.append(optiond.translationO['option'])
               questiondata['options']=optiondata
               response.append(questiondata)
           else:
@@ -221,6 +246,59 @@ class getCmpQuestionAPI(generics.GenericAPIView):
         return  JsonResponse({"questions":response,"studentEnrollmentID":studentEnrollmentlanguagecode.studentEnrollmentID,"timeduration":timeduration}, safe=False)
       except Exception as e:
         return HttpResponse(status=404)
+
+class getAlreadySavedResponse(generics.GenericAPIView):
+    permission_classes = [
+      permissions.IsAuthenticated,
+    ]
+    serializer_class = StudentResponseSerializer
+
+    def post(self, request):
+      try:
+        selectedoption=""
+        print(request.data)
+        ques=request.data['identifier']
+        quesTranslation=questionTranslation.objects.get(Identifier=ques)
+        print("got question ",quesTranslation)
+        student_enrolled=studentEnrollment.objects.get(studentEnrollmentID=request.data['studentEnrollmentID'])
+        print(student_enrolled)
+        print(quesTranslation.questionID,student_enrolled.competitionAgeID)
+        cmpques=competitionQuestion.objects.get(questionID=quesTranslation.questionID.questionID,competitionAgeID=student_enrolled.competitionAgeID)
+        print(cmpques.competitionQuestionID)
+        opti=option.objects.filter(questionID=quesTranslation.questionID).values_list('optionID', flat=True)
+        opti=list(opti)
+        if len(opti)==0:
+            request.data['optionTranslationID']=None
+            request.data['ansText']=""
+        else:
+            request.data['ansText']=None
+            request.data['optionTranslationID']=1
+        del request.data['option']
+        del request.data['identifier']
+        print(request.data)   
+        try:
+          #student has already given response
+          student_res=studentResponse.objects.get(competitionQuestionID=cmpques.competitionQuestionID,studentEnrollmentID=student_enrolled.studentEnrollmentID)
+          print(student_res)
+          if request.data['optionTranslationID']==None:
+            print("Ans Text Type")
+            if student_res.ansText==None:
+              selectedoption=""
+            else:
+              selectedoption=student_res.ansText
+          elif request.data['ansText']==None:
+            if student_res.optionTranslationID==None:
+              selectedoption=""
+            else:
+              selectedoption=student_res.optionTranslationID.translationO["option"]
+          print(" Student Response Updated",selectedoption)
+          return Response({"Option":selectedoption},status=200)
+        except studentResponse.DoesNotExist:
+          #student is giving response for the first time
+          return Response({"Option":""},status=200)
+   
+      except Exception as e:
+        return HttpResponse(e,status=404)
 
 class studentResponseAPI(generics.GenericAPIView):
     permission_classes = [
@@ -255,8 +333,9 @@ class studentResponseAPI(generics.GenericAPIView):
               request.data['ansText']=None
             else:
               optiontext['option']=opt
+              # optiontexts='"option":'+'"'+opt+'"'
               print(optiontext)
-              opTranslation=optionTranslation.objects.get(translationO=optiontext,optionID__in=opti,languageCodeID=student_enrolled.languageCodeID) 
+              opTranslation=optionTranslation.objects.get(optionTranslationID=opt)
               print(opTranslation)
               request.data['optionTranslationID']=opTranslation.optionTranslationID
               request.data['ansText']=None
@@ -388,14 +467,15 @@ class getCompetitionsNamesForResultAPI(generics.GenericAPIView):
         print(studentenrolled)
         for data in studentenrolled:
            student_response=studentResponse.objects.filter(studentEnrollmentID=data.studentEnrollmentID)
-           print(student_response)
            if student_response :
                print(student_response)
-               cmpNames.append(data.competitionAgeID.competitionID.competitionName)
+               print(data.score)
+               if data.score!=999:
+                  cmpNames.append(data.competitionAgeID.competitionID.competitionName)
                print(cmpNames)
            else:
                print("Registered but not appeared for ",data.competitionAgeID.competitionID.competitionName)
-        
+        cmpNames.reverse()
         if len(cmpNames)==0:
           return Response("Sorry you haven't appeared for any competitions",status=404)
         return  JsonResponse({"competitionnames":cmpNames}, safe=False)
@@ -437,7 +517,7 @@ class getCmpResultsAPI(generics.GenericAPIView):
     def post(self, request):
       try:
         totalscore=0
-        response=[]
+        Resultsresponse=[]
         print("Request received from ",request.user.userID)
         compName=competition.objects.get(competitionName=request.data['competitionName'])
         print(compName)
@@ -456,188 +536,212 @@ class getCmpResultsAPI(generics.GenericAPIView):
         if studentEnrollmentlanguagecode.score==999:
           print("User hasn't completed the test")
           return Response("User hasn't completed the test",status=404)
-        cmpquestion=competitionQuestion.objects.filter(competitionAgeID=cmpage.competitionAgeID).values_list('questionID', flat=True)
-        cmpquestion=list(cmpquestion)
-        questiontranslation=questionTranslation.objects.filter(questionID__in=cmpquestion,languageCodeID=studentEnrollmentlanguagecode.languageCodeID)
-        print("total number of questions",len(questiontranslation))
-        questiondata={}
-        for quest in questiontranslation:
+        domains=code.objects.filter(codeGroupID=domain)
+        # domains=list(domains)
+       
+        for domainnames in domains:
+          resultjson={"domain":"","questions":[],"score":0,"marks":0}
+          resultjson["domain"]=domainnames.codeName
+          score=0
+          marks=0
+          response=[]
+          print(domainnames.codeName)
+          cmpquestion=competitionQuestion.objects.filter(competitionAgeID=cmpage.competitionAgeID).values_list('questionID', flat=True)
+          cmpquestion=list(cmpquestion)
+          questionslist=question.objects.filter(questionID__in=cmpquestion,domainCodeID=domainnames).values_list('questionID', flat=True)
+          questionslist=list(questionslist)
+          if len(questionslist)==0:
+            continue
+          questiontranslation=questionTranslation.objects.filter(questionID__in=questionslist,languageCodeID=studentEnrollmentlanguagecode.languageCodeID)
+          print("total number of questions",len(questiontranslation))
           questiondata={}
-          questiondata['question_caption']=quest.translation['caption']
-          questiondata['question_background']=quest.translation['background']
-          questiondata['question_explanation']=quest.translation['explanation']      
-          questiondata['question_domain']=quest.questionID.domainCodeID.codeName
-          questiondata['identifier']=quest.Identifier
-          question_skills=""
-          cs_skills=quest.questionID.cs_skills.split(',')
-          print(cs_skills)
-          for skill in cs_skills:
-            skill=int(skill)
-            codeskills=code.objects.get(codeID=skill)
-            print(codeskills)
-            if question_skills=="":
-              question_skills=codeskills.codeName
-            else:
-              question_skills=question_skills+" , "+codeskills.codeName
-          questiondata['question_cs_skills']=question_skills
-          correctoption=correctOption.objects.get(questionTranslationID=quest.questionTranslationID)
-          cmpquest=competitionQuestion.objects.get(questionID=quest.questionID,competitionAgeID=cmpage.competitionAgeID)
-          print(cmpquest.competitionQuestionID,studentEnrollmentlanguagecode.studentEnrollmentID)
-          try:
-            studentres=studentResponse.objects.get(competitionQuestionID=cmpquest.competitionQuestionID,studentEnrollmentID=studentEnrollmentlanguagecode.studentEnrollmentID)
-            print(studentres)
-            if correctoption.ansText is None:
-              if(quest.questionID.questionTypeCodeID.codeID==question_without_images):
-                print("we came in question without images")
-                questiondata['question_type']="question_without_images"
-                optionlist=option.objects.filter(questionID=quest.questionID).values_list('optionID', flat=True)
-                optionlist=list(optionlist)
-                optiontranslation = optionTranslation.objects.filter(optionID__in=optionlist,languageCodeID=studentEnrollmentlanguagecode.languageCodeID.codeID)
-                print("no of options",len(optiontranslation))
-                optiondata=[]
-                if studentres.optionTranslationID is None:
-                  questiondata['selectedoption']="No option Selected"
-                else:
-                  print("Got user's selected option")
-                  questiondata['selectedoption']=studentres.optionTranslationID.translationO['option']
-                for optiond in optiontranslation:
-                    optiondata.append(optiond.translationO['option'])
-                questiondata['options']=optiondata
-                questiondata['correctoption']=correctoption.optionTranslationID.translationO['option']
-                cmpmarks=competition_MarkScheme.objects.get(competitionAgeID=cmpage.competitionAgeID,questionLevelCodeID=cmpquest.questionLevelCodeID)
-                questiondata['marks']=cmpmarks.correctMarks
-                totalscore=totalscore+cmpmarks.correctMarks
-                if(questiondata['selectedoption']==questiondata['correctoption']):
-                  questiondata['Score']=cmpmarks.correctMarks
-                elif questiondata['selectedoption']=="No option Selected":
-                  questiondata['Score']=0
-                else:
-                  questiondata['Score']=cmpmarks.incorrectMarks
+          for quest in questiontranslation:
+            questiondata={}
+            questiondata['question_caption']=quest.translation['caption']
+            questiondata['question_background']=quest.translation['background']
+            questiondata['question_explanation']=quest.translation['explanation']      
+            questiondata['question_domain']=quest.questionID.domainCodeID.codeName
+            questiondata['identifier']=quest.Identifier
+            question_skills=""
+            cs_skills=quest.questionID.cs_skills.split(',')
+            print(cs_skills)
+            for skill in cs_skills:
+              skill=int(skill)
+              codeskills=code.objects.get(codeID=skill)
+              print(codeskills)
+              if question_skills=="":
+                question_skills=codeskills.codeName
+              else:
+                question_skills=question_skills+" , "+codeskills.codeName
+            questiondata['question_cs_skills']=question_skills
+            correctoption=correctOption.objects.get(questionTranslationID=quest.questionTranslationID)
+            cmpquest=competitionQuestion.objects.get(questionID=quest.questionID,competitionAgeID=cmpage.competitionAgeID)
+            print(cmpquest.competitionQuestionID,studentEnrollmentlanguagecode.studentEnrollmentID)
+            try:
+              studentres=studentResponse.objects.get(competitionQuestionID=cmpquest.competitionQuestionID,studentEnrollmentID=studentEnrollmentlanguagecode.studentEnrollmentID)
+              print(studentres)
+              if correctoption.ansText is None:
+                if(quest.questionID.questionTypeCodeID.codeID==question_without_images):
+                  print("we came in question without images")
+                  questiondata['question_type']="question_without_images"
+                  optionlist=option.objects.filter(questionID=quest.questionID).values_list('optionID', flat=True)
+                  optionlist=list(optionlist)
+                  optiontranslation = optionTranslation.objects.filter(optionID__in=optionlist,languageCodeID=studentEnrollmentlanguagecode.languageCodeID.codeID)
+                  print("no of options",len(optiontranslation))
+                  optiondata=[]
+                  if studentres.optionTranslationID is None:
+                    questiondata['selectedoption']="No option Selected"
+                  else:
+                    print("Got user's selected option")
+                    questiondata['selectedoption']=studentres.optionTranslationID.translationO['option']
+                  for optiond in optiontranslation:
+                      optiondata.append(optiond.translationO['option'])
+                  questiondata['options']=optiondata
+                  questiondata['correctoption']=correctoption.optionTranslationID.translationO['option']
+                  cmpmarks=competition_MarkScheme.objects.get(competitionAgeID=cmpage.competitionAgeID,questionLevelCodeID=cmpquest.questionLevelCodeID)
+                  questiondata['marks']=cmpmarks.correctMarks
+                  marks=marks+cmpmarks.correctMarks
+                  totalscore=totalscore+cmpmarks.correctMarks
+                  if(questiondata['selectedoption']==questiondata['correctoption']):
+                    questiondata['Score']=cmpmarks.correctMarks
+                  elif questiondata['selectedoption']=="No option Selected":
+                    questiondata['Score']=0
+                  else:
+                    questiondata['Score']=cmpmarks.incorrectMarks
+                  score=score+questiondata['Score']
+                  response.append(questiondata)
+                elif(quest.questionID.questionTypeCodeID.codeID==question_with_images):
+                  print("we came in question with images")
+                  questiondata['question_type']="question_with_images"
+                  optionlist=option.objects.filter(questionID=quest.questionID).values_list('optionID', flat=True)
+                  optionlist=list(optionlist)
+                  optiontranslation=optionTranslation.objects.filter(optionID__in=optionlist,languageCodeID=studentEnrollmentlanguagecode.languageCodeID.codeID)
+                  print("no of options",len(optiontranslation))
+                  image=Image.objects.filter(ImageTypeCodeID=imageOpt)
+                  imagop=[]
+                  for im in image:
+                    for op in optiontranslation:
+                      if(im.ObjectID==op.optionID.optionID): #image me question id ki question translation id?
+                        imagop.append(im.uploadedFile)
+                  if(imagop):
+                    print("option has imagees")  
+                    questiondata['images_of_option']=imagop
+                  if studentres.optionTranslationID is None:
+                    questiondata['selectedoption']="No option Selected"
+                  else:
+                    print("Got user's selected option")
+                    questiondata['selectedoption']=studentres.optionTranslationID.translationO['option']
+                  optiondata=[]
+                  for optiond in optiontranslation:
+                      optiondata.append(optiond.translationO['option'])
+                  questiondata['options']=optiondata
+                  questiondata['correctoption']=correctoption.optionTranslationID.translationO['option']
+                  cmpmarks=competition_MarkScheme.objects.get(competitionAgeID=cmpage.competitionAgeID,questionLevelCodeID=cmpquest.questionLevelCodeID)
+                  print(cmpmarks)
+                  questiondata['marks']=cmpmarks.correctMarks
+                  marks=marks+cmpmarks.correctMarks
+                  totalscore=totalscore+cmpmarks.correctMarks
+                  if(questiondata['selectedoption']==questiondata['correctoption']):
+                    questiondata['Score']=cmpmarks.correctMarks
+                  elif questiondata['selectedoption']=="No option Selected":
+                    questiondata['Score']=0
+                  else:
+                    questiondata['Score']=cmpmarks.incorrectMarks
+                  score=score+questiondata['Score']
+                  print(questiondata)
+                  response.append(questiondata)
                 
-                response.append(questiondata)
-              elif(quest.questionID.questionTypeCodeID.codeID==question_with_images):
-                print("we came in question with images")
-                questiondata['question_type']="question_with_images"
-                optionlist=option.objects.filter(questionID=quest.questionID).values_list('optionID', flat=True)
-                optionlist=list(optionlist)
-                optiontranslation=optionTranslation.objects.filter(optionID__in=optionlist,languageCodeID=studentEnrollmentlanguagecode.languageCodeID.codeID)
-                print("no of options",len(optiontranslation))
-                image=Image.objects.filter(ImageTypeCodeID=imageOpt)
-                imagop=[]
-                for im in image:
-                  for op in optiontranslation:
-                    if(im.ObjectID==op.optionID.optionID): #image me question id ki question translation id?
-                      imagop.append(im.uploadedFile)
-                if(imagop):
-                  print("option has imagees")  
-                  questiondata['images_of_option']=imagop
-                if studentres.optionTranslationID is None:
-                  questiondata['selectedoption']="No option Selected"
-                else:
-                  print("Got user's selected option")
-                  questiondata['selectedoption']=studentres.optionTranslationID.translationO['option']
-                optiondata=[]
-                for optiond in optiontranslation:
-                    optiondata.append(optiond.translationO['option'])
-                questiondata['options']=optiondata
-                questiondata['correctoption']=correctoption.optionTranslationID.translationO['option']
+              else:
+                questiondata['question_type']="question_without_images_without_options"
+                questiondata['correctoption']=correctoption.ansText
+                questiondata['selectedoption']=studentres.ansText
                 cmpmarks=competition_MarkScheme.objects.get(competitionAgeID=cmpage.competitionAgeID,questionLevelCodeID=cmpquest.questionLevelCodeID)
-                print(cmpmarks)
                 questiondata['marks']=cmpmarks.correctMarks
+                marks=marks+cmpmarks.correctMarks
                 totalscore=totalscore+cmpmarks.correctMarks
-                if(questiondata['selectedoption']==questiondata['correctoption']):
+                if correctoption.ansText == studentres.ansText:
                   questiondata['Score']=cmpmarks.correctMarks
-                elif questiondata['selectedoption']=="No option Selected":
+                elif  studentres.ansText == "" or studentres.ansText==None:
                   questiondata['Score']=0
-                else:
+                else :
                   questiondata['Score']=cmpmarks.incorrectMarks
+                score=score+questiondata['Score']
+                response.append(questiondata)
+              
+            except studentResponse.DoesNotExist:
+              if correctoption.ansText is None:
+                if(quest.questionID.questionTypeCodeID.codeID==question_without_images):
+                  print("we came in question without images")
+                  questiondata['question_type']="question_without_images"
+                  optionlist=option.objects.filter(questionID=quest.questionID).values_list('optionID', flat=True)
+                  optionlist=list(optionlist)
+                  optiontranslation = optionTranslation.objects.filter(optionID__in=optionlist,languageCodeID=studentEnrollmentlanguagecode.languageCodeID.codeID)
+                  print("no of options",len(optiontranslation))
+                  optiondata=[]
+                  questiondata['selectedoption']="No option Selected"
+                  for optiond in optiontranslation:
+                      optiondata.append(optiond.translationO['option'])
+                  questiondata['options']=optiondata
+                  questiondata['correctoption']=correctoption.optionTranslationID.translationO['option']
+                  cmpmarks=competition_MarkScheme.objects.get(competitionAgeID=cmpage.competitionAgeID,questionLevelCodeID=cmpquest.questionLevelCodeID)
+                  questiondata['marks']=cmpmarks.correctMarks
+                  marks=marks+cmpmarks.correctMarks
+                  totalscore=totalscore+cmpmarks.correctMarks
+                  questiondata['Score']=0
+                  response.append(questiondata)
+                elif(quest.questionID.questionTypeCodeID.codeID==question_with_images):
+                  print("we came in question with images")
+                  questiondata['question_type']="question_with_images"
+                  optionlist=option.objects.filter(questionID=quest.questionID).values_list('optionID', flat=True)
+                  optionlist=list(optionlist)
+                  optiontranslation=optionTranslation.objects.filter(optionID__in=optionlist,languageCodeID=studentEnrollmentlanguagecode.languageCodeID.codeID)
+                  print("no of options",len(optiontranslation))
+                  image=Image.objects.filter(ImageTypeCodeID=imageOpt)
+                  imagop=[]
+                  for im in image:
+                    for op in optiontranslation:
+                      if(im.ObjectID==op.optionID.optionID): #image me question id ki question translation id?
+                        imagop.append(im.uploadedFile)
+                  if(imagop):
+                    print("option has imagees")  
+                    questiondata['images_of_option']=imagop
+                  
+                  questiondata['selectedoption']="No option Selected"
+                  
+                  optiondata=[]
+                  for optiond in optiontranslation:
+                      optiondata.append(optiond.translationO['option'])
+                  questiondata['options']=optiondata
+                  questiondata['correctoption']=correctoption.optionTranslationID.translationO['option']
+                  cmpmarks=competition_MarkScheme.objects.get(competitionAgeID=cmpage.competitionAgeID,questionLevelCodeID=cmpquest.questionLevelCodeID)
+                  print(cmpmarks)
+                  questiondata['marks']=cmpmarks.correctMarks
+                  marks=marks+cmpmarks.correctMarks
+                  totalscore=totalscore+cmpmarks.correctMarks
+                  questiondata['Score']=0
+                  print(questiondata)
+                  response.append(questiondata)
+                
+              else:
+                questiondata['question_type']="question_without_images_without_options"
+                questiondata['correctoption']=correctoption.ansText
+                questiondata['selectedoption']="No option Selected"
+                cmpmarks=competition_MarkScheme.objects.get(competitionAgeID=cmpage.competitionAgeID,questionLevelCodeID=cmpquest.questionLevelCodeID)
+                questiondata['marks']=cmpmarks.correctMarks
+                marks=marks+cmpmarks.correctMarks
+                totalscore=totalscore+cmpmarks.correctMarks
+                questiondata['Score']=0
                 print(questiondata)
                 response.append(questiondata)
               
-            else:
-              questiondata['question_type']="question_without_images_without_options"
-              questiondata['correctoption']=correctoption.ansText
-              questiondata['selectedoption']=studentres.ansText
-              cmpmarks=competition_MarkScheme.objects.get(competitionAgeID=cmpage.competitionAgeID,questionLevelCodeID=cmpquest.questionLevelCodeID)
-              questiondata['marks']=cmpmarks.correctMarks
-              totalscore=totalscore+cmpmarks.correctMarks
-              if correctoption.ansText == studentres.ansText:
-                questiondata['Score']=cmpmarks.correctMarks
-              elif  studentres.ansText == "" or studentres.ansText==None:
-                questiondata['Score']=0
-              else :
-                questiondata['Score']=cmpmarks.incorrectMarks
-
-              response.append(questiondata)
-            
-          except studentResponse.DoesNotExist:
-            if correctoption.ansText is None:
-              if(quest.questionID.questionTypeCodeID.codeID==question_without_images):
-                print("we came in question without images")
-                questiondata['question_type']="question_without_images"
-                optionlist=option.objects.filter(questionID=quest.questionID).values_list('optionID', flat=True)
-                optionlist=list(optionlist)
-                optiontranslation = optionTranslation.objects.filter(optionID__in=optionlist,languageCodeID=studentEnrollmentlanguagecode.languageCodeID.codeID)
-                print("no of options",len(optiontranslation))
-                optiondata=[]
-                questiondata['selectedoption']="No option Selected"
-                for optiond in optiontranslation:
-                    optiondata.append(optiond.translationO['option'])
-                questiondata['options']=optiondata
-                questiondata['correctoption']=correctoption.optionTranslationID.translationO['option']
-                cmpmarks=competition_MarkScheme.objects.get(competitionAgeID=cmpage.competitionAgeID,questionLevelCodeID=cmpquest.questionLevelCodeID)
-                questiondata['marks']=cmpmarks.correctMarks
-                totalscore=totalscore+cmpmarks.correctMarks
-                questiondata['Score']=0
-                response.append(questiondata)
-              elif(quest.questionID.questionTypeCodeID.codeID==question_with_images):
-                print("we came in question with images")
-                questiondata['question_type']="question_with_images"
-                optionlist=option.objects.filter(questionID=quest.questionID).values_list('optionID', flat=True)
-                optionlist=list(optionlist)
-                optiontranslation=optionTranslation.objects.filter(optionID__in=optionlist,languageCodeID=studentEnrollmentlanguagecode.languageCodeID.codeID)
-                print("no of options",len(optiontranslation))
-                image=Image.objects.filter(ImageTypeCodeID=imageOpt)
-                imagop=[]
-                for im in image:
-                  for op in optiontranslation:
-                    if(im.ObjectID==op.optionID.optionID): #image me question id ki question translation id?
-                      imagop.append(im.uploadedFile)
-                if(imagop):
-                  print("option has imagees")  
-                  questiondata['images_of_option']=imagop
-                
-                questiondata['selectedoption']="No option Selected"
-                
-                optiondata=[]
-                for optiond in optiontranslation:
-                    optiondata.append(optiond.translationO['option'])
-                questiondata['options']=optiondata
-                questiondata['correctoption']=correctoption.optionTranslationID.translationO['option']
-                cmpmarks=competition_MarkScheme.objects.get(competitionAgeID=cmpage.competitionAgeID,questionLevelCodeID=cmpquest.questionLevelCodeID)
-                print(cmpmarks)
-                questiondata['marks']=cmpmarks.correctMarks
-                totalscore=totalscore+cmpmarks.correctMarks
-                questiondata['Score']=0
-                print(questiondata)
-                response.append(questiondata)
-              
-            else:
-              questiondata['question_type']="question_without_images_without_options"
-              questiondata['correctoption']=correctoption.ansText
-              questiondata['selectedoption']="No option Selected"
-              cmpmarks=competition_MarkScheme.objects.get(competitionAgeID=cmpage.competitionAgeID,questionLevelCodeID=cmpquest.questionLevelCodeID)
-              questiondata['marks']=cmpmarks.correctMarks
-              totalscore=totalscore+cmpmarks.correctMarks
-              questiondata['Score']=0
-              print(questiondata)
-              response.append(questiondata)
-            
-          except:
-            return Response("One or more responses for the same question",status=404)
-
-        print("done")
-        return  JsonResponse({"questions":response,"studentID":request.user.loginID,"studentName":request.user.username,"TotalScore":studentEnrollmentlanguagecode.score,"totalMarks":totalscore}, safe=False)
+            except:
+              return Response("One or more responses for the same question",status=404)
+          resultjson["questions"]=response
+          resultjson["score"]=score
+          resultjson["marks"]=marks
+          Resultsresponse.append(resultjson)
+          print("done")
+        return  JsonResponse({"domain_wise_questions":Resultsresponse,"studentID":request.user.loginID,"studentName":request.user.username,"TotalScore":studentEnrollmentlanguagecode.score,"totalMarks":totalscore}, safe=False)
       except Exception as e:
         return HttpResponse(e,status=404)
 
@@ -676,6 +780,7 @@ class practiceChallengeNames(APIView):
         comp=competition.objects.filter(competitionType=practice_challenge)
         challenges=[]
         challengesnames=[]
+        agegrp=[]
         print(len(comp))
         for data in comp:
           startDate=data.startDate.date()
@@ -687,10 +792,18 @@ class practiceChallengeNames(APIView):
         cmpage=competitionAge.objects.filter(competitionID__in=challenges)
         print(len(cmpage))
         for data in cmpage:
+          agegrp.append(data.AgeGroupClassID.AgeGroupID)
           challengesnames.append(data.AgeGroupClassID.AgeGroupID.AgeGroupName)
-        challengesnames = set(challengesnames)
-        print(challengesnames)
-        challengesnames = list(challengesnames)
+        
+        challengesnames = list(dict.fromkeys(challengesnames))
+        agegrp = list(dict.fromkeys(agegrp))
+        for i in range(len(agegrp)):
+          print(agegrp[i])
+          agegrpclass=AgeGroupClass.objects.filter(AgeGroupID=agegrp[i]).values_list('ClassID', flat=True)
+          caption=str(list(agegrpclass))
+          caption=caption.replace('[', '')
+          caption=caption.replace(']', '')
+          challengesnames[i]=challengesnames[i]+ " ( Class "+caption +")"
         if len(challengesnames)==0:
           return Response("No Practice Challenge to show ",status=404)    
         return JsonResponse({"PracticeChallenges":challengesnames}, safe=False)
@@ -704,6 +817,9 @@ class PracChallengeQuestionAPI(generics.GenericAPIView):
     def post(self, request):
       try:
         response=[]
+        position=request.data['AgeGroupName'].index('(')
+        request.data['AgeGroupName']=request.data['AgeGroupName'][:position]
+        request.data['AgeGroupName']=request.data['AgeGroupName'].strip()
         print(request.data['AgeGroupName'])
         lang=request.data['AgeGroupName'].split('-')
         language=code.objects.get(codeName=lang[1])
@@ -716,8 +832,7 @@ class PracChallengeQuestionAPI(generics.GenericAPIView):
           endDate=comps.competitionID.endDate.date()
           if comps.AgeGroupClassID.AgeGroupID.AgeGroupName== request.data['AgeGroupName'] and comps.competitionID.competitionType.codeID==practice_challenge and today<endDate:
             cmps.append(comps.competitionID.competitionName)
-        cmps=set(cmps)
-        cmps=list(cmps)
+        cmps = list(dict.fromkeys(cmps))
         if(len(cmps)>1):
           return Response("Something went wrong",status=404)
         compName=competition.objects.filter(competitionName=cmps[0])
@@ -855,7 +970,7 @@ class GetAgeGroupToppers(APIView):
               stud.append(studentenrolled[0].studentEnrollmentID)
           except:
             return Response(status=400)
-        ageGroupList=set(ageGroupList)
+        ageGroupList = list(dict.fromkeys(ageGroupList))
         print(ageGroupList)
         timecurrent=time(int(1), int(1), int(30))
         for data in ageGroupList:
@@ -1324,3 +1439,214 @@ class GetLatestTemplate(APIView):               #Get Latest Template API
                 name=f[i]
                 break
         return Response(name)
+
+# class getCmpResultsAPI(generics.GenericAPIView):
+    permission_classes = [
+      permissions.IsAuthenticated,
+    ]
+    def post(self, request):
+      try:
+        totalscore=0
+        response=[]
+        print("Request received from ",request.user.userID)
+        compName=competition.objects.get(competitionName=request.data['competitionName'])
+        print(compName)
+        studentenrolled=studentEnrollment.objects.filter(userID=request.user.userID).values_list('competitionAgeID', flat=True)
+        if not studentenrolled.exists():
+          return Response("User hasn't registered for any of the competitions",status=404)
+        studentenrolled=list(studentenrolled)
+        print(studentenrolled)
+        
+        cmpage = competitionAge.objects.get(competitionAgeID__in=studentenrolled,competitionID=compName.competitionID)
+        print(cmpage)
+        try:
+          studentEnrollmentlanguagecode=studentEnrollment.objects.get(competitionAgeID=cmpage.competitionAgeID,userID=request.user.userID)
+        except:
+          return Response("User has registered more than once for same competition",status=404)
+        if studentEnrollmentlanguagecode.score==999:
+          print("User hasn't completed the test")
+          return Response("User hasn't completed the test",status=404)
+        cmpquestion=competitionQuestion.objects.filter(competitionAgeID=cmpage.competitionAgeID).values_list('questionID', flat=True)
+        cmpquestion=list(cmpquestion)
+        questiontranslation=questionTranslation.objects.filter(questionID__in=cmpquestion,languageCodeID=studentEnrollmentlanguagecode.languageCodeID)
+        print("total number of questions",len(questiontranslation))
+        questiondata={}
+        for quest in questiontranslation:
+          questiondata={}
+          questiondata['question_caption']=quest.translation['caption']
+          questiondata['question_background']=quest.translation['background']
+          questiondata['question_explanation']=quest.translation['explanation']      
+          questiondata['question_domain']=quest.questionID.domainCodeID.codeName
+          questiondata['identifier']=quest.Identifier
+          question_skills=""
+          cs_skills=quest.questionID.cs_skills.split(',')
+          print(cs_skills)
+          for skill in cs_skills:
+            skill=int(skill)
+            codeskills=code.objects.get(codeID=skill)
+            print(codeskills)
+            if question_skills=="":
+              question_skills=codeskills.codeName
+            else:
+              question_skills=question_skills+" , "+codeskills.codeName
+          questiondata['question_cs_skills']=question_skills
+          correctoption=correctOption.objects.get(questionTranslationID=quest.questionTranslationID)
+          cmpquest=competitionQuestion.objects.get(questionID=quest.questionID,competitionAgeID=cmpage.competitionAgeID)
+          print(cmpquest.competitionQuestionID,studentEnrollmentlanguagecode.studentEnrollmentID)
+          try:
+            studentres=studentResponse.objects.get(competitionQuestionID=cmpquest.competitionQuestionID,studentEnrollmentID=studentEnrollmentlanguagecode.studentEnrollmentID)
+            print(studentres)
+            if correctoption.ansText is None:
+              if(quest.questionID.questionTypeCodeID.codeID==question_without_images):
+                print("we came in question without images")
+                questiondata['question_type']="question_without_images"
+                optionlist=option.objects.filter(questionID=quest.questionID).values_list('optionID', flat=True)
+                optionlist=list(optionlist)
+                optiontranslation = optionTranslation.objects.filter(optionID__in=optionlist,languageCodeID=studentEnrollmentlanguagecode.languageCodeID.codeID)
+                print("no of options",len(optiontranslation))
+                optiondata=[]
+                if studentres.optionTranslationID is None:
+                  questiondata['selectedoption']="No option Selected"
+                else:
+                  print("Got user's selected option")
+                  questiondata['selectedoption']=studentres.optionTranslationID.translationO['option']
+                for optiond in optiontranslation:
+                    optiondata.append(optiond.translationO['option'])
+                questiondata['options']=optiondata
+                questiondata['correctoption']=correctoption.optionTranslationID.translationO['option']
+                cmpmarks=competition_MarkScheme.objects.get(competitionAgeID=cmpage.competitionAgeID,questionLevelCodeID=cmpquest.questionLevelCodeID)
+                questiondata['marks']=cmpmarks.correctMarks
+                totalscore=totalscore+cmpmarks.correctMarks
+                if(questiondata['selectedoption']==questiondata['correctoption']):
+                  questiondata['Score']=cmpmarks.correctMarks
+                elif questiondata['selectedoption']=="No option Selected":
+                  questiondata['Score']=0
+                else:
+                  questiondata['Score']=cmpmarks.incorrectMarks
+                
+                response.append(questiondata)
+              elif(quest.questionID.questionTypeCodeID.codeID==question_with_images):
+                print("we came in question with images")
+                questiondata['question_type']="question_with_images"
+                optionlist=option.objects.filter(questionID=quest.questionID).values_list('optionID', flat=True)
+                optionlist=list(optionlist)
+                optiontranslation=optionTranslation.objects.filter(optionID__in=optionlist,languageCodeID=studentEnrollmentlanguagecode.languageCodeID.codeID)
+                print("no of options",len(optiontranslation))
+                image=Image.objects.filter(ImageTypeCodeID=imageOpt)
+                imagop=[]
+                for im in image:
+                  for op in optiontranslation:
+                    if(im.ObjectID==op.optionID.optionID): #image me question id ki question translation id?
+                      imagop.append(im.uploadedFile)
+                if(imagop):
+                  print("option has imagees")  
+                  questiondata['images_of_option']=imagop
+                if studentres.optionTranslationID is None:
+                  questiondata['selectedoption']="No option Selected"
+                else:
+                  print("Got user's selected option")
+                  questiondata['selectedoption']=studentres.optionTranslationID.translationO['option']
+                optiondata=[]
+                for optiond in optiontranslation:
+                    optiondata.append(optiond.translationO['option'])
+                questiondata['options']=optiondata
+                questiondata['correctoption']=correctoption.optionTranslationID.translationO['option']
+                cmpmarks=competition_MarkScheme.objects.get(competitionAgeID=cmpage.competitionAgeID,questionLevelCodeID=cmpquest.questionLevelCodeID)
+                print(cmpmarks)
+                questiondata['marks']=cmpmarks.correctMarks
+                totalscore=totalscore+cmpmarks.correctMarks
+                if(questiondata['selectedoption']==questiondata['correctoption']):
+                  questiondata['Score']=cmpmarks.correctMarks
+                elif questiondata['selectedoption']=="No option Selected":
+                  questiondata['Score']=0
+                else:
+                  questiondata['Score']=cmpmarks.incorrectMarks
+                print(questiondata)
+                response.append(questiondata)
+              
+            else:
+              questiondata['question_type']="question_without_images_without_options"
+              questiondata['correctoption']=correctoption.ansText
+              questiondata['selectedoption']=studentres.ansText
+              cmpmarks=competition_MarkScheme.objects.get(competitionAgeID=cmpage.competitionAgeID,questionLevelCodeID=cmpquest.questionLevelCodeID)
+              questiondata['marks']=cmpmarks.correctMarks
+              totalscore=totalscore+cmpmarks.correctMarks
+              if correctoption.ansText == studentres.ansText:
+                questiondata['Score']=cmpmarks.correctMarks
+              elif  studentres.ansText == "" or studentres.ansText==None:
+                questiondata['Score']=0
+              else :
+                questiondata['Score']=cmpmarks.incorrectMarks
+
+              response.append(questiondata)
+            
+          except studentResponse.DoesNotExist:
+            if correctoption.ansText is None:
+              if(quest.questionID.questionTypeCodeID.codeID==question_without_images):
+                print("we came in question without images")
+                questiondata['question_type']="question_without_images"
+                optionlist=option.objects.filter(questionID=quest.questionID).values_list('optionID', flat=True)
+                optionlist=list(optionlist)
+                optiontranslation = optionTranslation.objects.filter(optionID__in=optionlist,languageCodeID=studentEnrollmentlanguagecode.languageCodeID.codeID)
+                print("no of options",len(optiontranslation))
+                optiondata=[]
+                questiondata['selectedoption']="No option Selected"
+                for optiond in optiontranslation:
+                    optiondata.append(optiond.translationO['option'])
+                questiondata['options']=optiondata
+                questiondata['correctoption']=correctoption.optionTranslationID.translationO['option']
+                cmpmarks=competition_MarkScheme.objects.get(competitionAgeID=cmpage.competitionAgeID,questionLevelCodeID=cmpquest.questionLevelCodeID)
+                questiondata['marks']=cmpmarks.correctMarks
+                totalscore=totalscore+cmpmarks.correctMarks
+                questiondata['Score']=0
+                response.append(questiondata)
+              elif(quest.questionID.questionTypeCodeID.codeID==question_with_images):
+                print("we came in question with images")
+                questiondata['question_type']="question_with_images"
+                optionlist=option.objects.filter(questionID=quest.questionID).values_list('optionID', flat=True)
+                optionlist=list(optionlist)
+                optiontranslation=optionTranslation.objects.filter(optionID__in=optionlist,languageCodeID=studentEnrollmentlanguagecode.languageCodeID.codeID)
+                print("no of options",len(optiontranslation))
+                image=Image.objects.filter(ImageTypeCodeID=imageOpt)
+                imagop=[]
+                for im in image:
+                  for op in optiontranslation:
+                    if(im.ObjectID==op.optionID.optionID): #image me question id ki question translation id?
+                      imagop.append(im.uploadedFile)
+                if(imagop):
+                  print("option has imagees")  
+                  questiondata['images_of_option']=imagop
+                
+                questiondata['selectedoption']="No option Selected"
+                
+                optiondata=[]
+                for optiond in optiontranslation:
+                    optiondata.append(optiond.translationO['option'])
+                questiondata['options']=optiondata
+                questiondata['correctoption']=correctoption.optionTranslationID.translationO['option']
+                cmpmarks=competition_MarkScheme.objects.get(competitionAgeID=cmpage.competitionAgeID,questionLevelCodeID=cmpquest.questionLevelCodeID)
+                print(cmpmarks)
+                questiondata['marks']=cmpmarks.correctMarks
+                totalscore=totalscore+cmpmarks.correctMarks
+                questiondata['Score']=0
+                print(questiondata)
+                response.append(questiondata)
+              
+            else:
+              questiondata['question_type']="question_without_images_without_options"
+              questiondata['correctoption']=correctoption.ansText
+              questiondata['selectedoption']="No option Selected"
+              cmpmarks=competition_MarkScheme.objects.get(competitionAgeID=cmpage.competitionAgeID,questionLevelCodeID=cmpquest.questionLevelCodeID)
+              questiondata['marks']=cmpmarks.correctMarks
+              totalscore=totalscore+cmpmarks.correctMarks
+              questiondata['Score']=0
+              print(questiondata)
+              response.append(questiondata)
+            
+          except:
+            return Response("One or more responses for the same question",status=404)
+
+        print("done")
+        return  JsonResponse({"questions":response,"studentID":request.user.loginID,"studentName":request.user.username,"TotalScore":studentEnrollmentlanguagecode.score,"totalMarks":totalscore}, safe=False)
+      except Exception as e:
+        return HttpResponse(e,status=404)
