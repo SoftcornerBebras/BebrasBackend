@@ -390,7 +390,7 @@ class GetGroup(APIView):                              #Get School Groups API
                    grpdata = {"codeName":groups[i].codeName,
                            "codeID":groups[i].codeID}
                    SchoolGrps.append(grpdata)
-           g = code.objects.get(codeName='Others',codeGroupID=group[0].codeGroupID)
+           g = code.objects.get(codeName='Other',codeGroupID=group[0].codeGroupID)
            grpdata = {"codeName": g.codeName,
                       "codeID" : g.codeID}
            SchoolGrps.append(grpdata)
