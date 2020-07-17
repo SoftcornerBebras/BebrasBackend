@@ -833,13 +833,24 @@ class PracChallengeQuestionAPI(generics.GenericAPIView):
           if comps.AgeGroupClassID.AgeGroupID.AgeGroupName== request.data['AgeGroupName'] and comps.competitionID.competitionType.codeID==practice_challenge and today<endDate:
             cmps.append(comps.competitionID.competitionName)
         cmps = list(dict.fromkeys(cmps))
+        print("okok",cmps)
         if(len(cmps)>1):
           return Response("Something went wrong",status=404)
         compName=competition.objects.filter(competitionName=cmps[0])
-        print(compName[0])
+        print(compName[0],compName)
+        agegrp=AgeGroup.objects.filter(AgeGroupName=request.data['AgeGroupName'])
+        agegrpselected=None
+        for ages in agegrp:
+          if ages.created_on.year==datetime.now().year:
+            agegrpselected=ages
+        print("oko",agegrpselected)
+        agegrpclasses=AgeGroupClass.objects.filter(AgeGroupID=agegrpselected).values_list('AgeGroupClassID', flat=True)
+        print("OOKK",agegrpclasses)
+        agegrpclasses=list(agegrpclasses)
         newcmp=None
-        cmpage = competitionAge.objects.filter(competitionID=compName[0].competitionID).values_list('competitionAgeID', flat=True)
+        cmpage = competitionAge.objects.filter(competitionID=compName[0].competitionID,AgeGroupClassID__in=agegrpclasses).values_list('competitionAgeID', flat=True)
         print((cmpage))
+        print("ok")
         if len(cmpage)==2:
           
           cmpage1=competitionAge.objects.get(competitionAgeID=cmpage[0])
