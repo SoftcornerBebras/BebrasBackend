@@ -166,7 +166,7 @@ def CheckAgeGrpsForBulkUpload():
                 lists = AgeGroup.objects.filter(created_on__range=[datetime.strptime(enddates, '%Y-%m-%d').date(),
                                                                    datetime.strptime(startrange, '%Y-%m-%d').date()])
                 serializer = GetAgeGroupsid(lists, many=True)
-                if len(serializer.data) != 0:
+                if len(serializer.data) !=0:
                     for i in range(0, len(serializer.data)):
                         AgeGroupIDList.append(serializer.data[i]['AgeGroupName'])
                         AgeGroupIDList.append(serializer.data[i]['AgeGroupID'])
@@ -174,87 +174,83 @@ def CheckAgeGrpsForBulkUpload():
             else:
                 return "Redirect"
 
-
-def InsertBulkData(reader, ser, modified_by):
+def InsertBulkData(reader,ser,modified_by):
+    print("in bulk data")
     for user in reader:
-        if questionTranslation.objects.filter(Identifier=user['Identifier']).exists() == False:
+        if questionTranslation.objects.filter(Identifier=user['Identifier']).exists()==False:
+            print("in if")
             countryRef = Countries.objects.get(name=user['Country'])
             domainCodeRef = code.objects.get(codeName=user['Domain'])
             quesTypeRef = code.objects.get(codeName=user['TypeOfQuestion'])
             skills = user['ComputationalSkills'].split(',')
             cs_skills = ""
             cs_skills = str(code.objects.get(codeName=skills[0]).codeID)
-            for i in range(1, len(skills)):
-                cs_skills = cs_skills + "," + str(code.objects.get(codeName=skills[i]).codeID)
-            ques = question.objects.create(countryID=countryRef, domainCodeID=domainCodeRef,
-                                           questionTypeCodeID=quesTypeRef, cs_skills=cs_skills)
+            for i in range(1,len(skills)):
+             cs_skills = cs_skills +","+str(code.objects.get(codeName=skills[i]).codeID)
+            ques = question.objects.create(countryID=countryRef, domainCodeID=domainCodeRef, questionTypeCodeID=quesTypeRef,cs_skills=cs_skills)
             langCodeRef = code.objects.get(codeName=user['Language'])
             Identifier = user['Identifier']
             modified_on = datetime.now().date()
-            task = '<div style=" font-family: Arial;">' + user['Task'] + '\n\n'
-            Ques = '<span style="fontWeight:bold">Question: \n\n </span>' + user['Question'] + '</div>'
-            background = task + Ques
-            explanation = '<div style=" font-family: Arial;">' + user['Explanation'] + '</div>'
-            trans = {
+            task = '<div style=" font-family: Arial;">'+user['Task']+'\n\n'
+            Ques = '<span style="fontWeight:bold">Question: \n\n </span>'+user['Question']+'</div>'
+            background = task+Ques
+            explanation = '<div style=" font-family: Arial;">'+ user['Explanation'] + '</div>'
+            trans={
                 "caption": user['Caption'],
                 "background": background,
                 "explanation": explanation,
             }
             quesTrans = questionTranslation.objects.create(questionID=ques, languageCodeID=langCodeRef,
-                                                           translation=trans, Identifier=Identifier,
-                                                           modified_by=modified_by,
+                                                           translation=trans, Identifier=Identifier, modified_by=modified_by,
                                                            modified_on=modified_on)
             AgeGroupNameList = user['AgeGroups'].split(',')
             questLevelList = user['QuestionLevels'].split(',')
             if len(AgeGroupNameList) != 0:
                 for i in range(0, len(AgeGroupNameList)):
                     index = ser.index(AgeGroupNameList[i])
-                    AgeGroupNameRef = AgeGroup.objects.get(AgeGroupName=AgeGroupNameList[i], AgeGroupID=ser[index + 1])
+                    AgeGroupNameRef = AgeGroup.objects.get(AgeGroupName=AgeGroupNameList[i],AgeGroupID=ser[index+1])
                     quesLevelRef = code.objects.get(codeName=questLevelList[i])
                     cmpQues = QuestionAge.objects.create(AgeGroupID=AgeGroupNameRef, questionID=ques,
-                                                         questionLevelCodeID=quesLevelRef)
+                                                             questionLevelCodeID=quesLevelRef)
             if user['AnswerText'] == "":
                 opt1 = option.objects.create(questionID=ques)
                 opt2 = option.objects.create(questionID=ques)
                 opt3 = option.objects.create(questionID=ques)
                 opt4 = option.objects.create(questionID=ques)
                 t = {
-                    "option": user['Option1']
+                    "option":user['Option1']
                 }
-                optTrans1 = optionTranslation.objects.create(optionID=opt1, languageCodeID=langCodeRef, translationO=t)
+                optTrans1 = optionTranslation.objects.create(optionID=opt1, languageCodeID=langCodeRef,translationO=t)
                 t = {
-                    "option": user['Option2']
+                    "option":user['Option2']
                 }
-                optTrans2 = optionTranslation.objects.create(optionID=opt2, languageCodeID=langCodeRef, translationO=t)
+                optTrans2 = optionTranslation.objects.create(optionID=opt2, languageCodeID=langCodeRef,translationO=t)
                 t = {
-                    "option": user['Option3']
+                    "option":user['Option3']
                 }
-                optTrans3 = optionTranslation.objects.create(optionID=opt3, languageCodeID=langCodeRef, translationO=t)
+                optTrans3 = optionTranslation.objects.create(optionID=opt3, languageCodeID=langCodeRef,translationO=t)
                 t = {
-                    "option": user['Option4']
+                    "option":user['Option4']
                 }
-                optTrans4 = optionTranslation.objects.create(optionID=opt4, languageCodeID=langCodeRef, translationO=t)
+                optTrans4 = optionTranslation.objects.create(optionID=opt4, languageCodeID=langCodeRef,translationO=t)
                 if user['CorrectOption'] == user['Option1']:
-                    corrOpt = correctOption.objects.create(questionTranslationID=quesTrans,
-                                                           optionTranslationID=optTrans1)
+                    corrOpt = correctOption.objects.create(questionTranslationID=quesTrans, optionTranslationID=optTrans1)
                 elif user['CorrectOption'] == user['Option2']:
-                    corrOpt = correctOption.objects.create(questionTranslationID=quesTrans,
-                                                           optionTranslationID=optTrans2)
+                    corrOpt = correctOption.objects.create(questionTranslationID=quesTrans, optionTranslationID=optTrans2)
                 elif user['CorrectOption'] == user['Option3']:
-                    corrOpt = correctOption.objects.create(questionTranslationID=quesTrans,
-                                                           optionTranslationID=optTrans3)
+                    corrOpt = correctOption.objects.create(questionTranslationID=quesTrans, optionTranslationID=optTrans3)
                 elif user['CorrectOption'] == user['Option4']:
-                    corrOpt = correctOption.objects.create(questionTranslationID=quesTrans,
-                                                           optionTranslationID=optTrans4)
+                    corrOpt = correctOption.objects.create(questionTranslationID=quesTrans, optionTranslationID=optTrans4)
             else:
-                corrOpt = correctOption.objects.create(questionTranslationID=quesTrans, ansText=user['AnswerText'])
+                  corrOpt = correctOption.objects.create(questionTranslationID=quesTrans, ansText=user['AnswerText'])
         else:
             continue
 
 
-def ProcessCSVdata(reader, modified_by):
+def ProcessCSVdata(reader,modified_by):
     ser = []
-    lists = []
+    lists=[]
+    print("in def",reader)
     for user in reader:
         lists.append(user)
         if CheckAgeGrpsForBulkUpload() == "Redirect":
@@ -262,33 +258,52 @@ def ProcessCSVdata(reader, modified_by):
         else:
             ser = CheckAgeGrpsForBulkUpload()
             AgeGroupNameList = user['AgeGroups'].split(',')
-            if len(AgeGroupNameList) != 0:
+            if len(AgeGroupNameList) !=0:
                 for i in range(0, len(AgeGroupNameList)):
                     if AgeGroupNameList[i] not in ser:
                         return "Redirect"
-    InsertBulkData(lists, ser, modified_by)
-
+    print(lists)
+    InsertBulkData(lists,ser,modified_by)
 
 @parser_classes((MultiPartParser,))
-class BulkUploadQuestion(APIView):  # Bulk Upload Ques API
-    authentication_classes = (TokenAuthentication,)
+class BulkUploadQuestion(APIView):                                   #Bulk Upload Ques API
+    authentication_classes = (TokenAuthentication, )
     permission_classes = (permissions.IsAuthenticated,)
 
     parser_class = (FileUploadParser,)
-
     def post(self, request):
         try:
             t = request.FILES['text']
+            # str = ''
+            # for line in t:
+            #     str = str + line.decode(errors='ignore')
             modified_by = json.loads(request.data['data'])
-            f = io.TextIOWrapper(t.file)
-            reader = csv.DictReader(f)
-            ser = ProcessCSVdata(reader, modified_by['modified_by'])
+            # print(t)
+            # print(str)
+            # jsonfile = "jsfile.json"
+            # data = {}
+            # with open(str) as csvfile:
+            #     csvReader = csv.DictReader(csvfile)
+            #     for rows in csvReader:
+            #         Identifier  = rows['Identifier']
+            #         data[Identifier] = rows
+            # print("file open")
+            # print(data)
+            # with open(jsonfile,'w') as jsonFile:
+            #     jsonFile.write((json.dumps(data)))
+            # file = open(t.file,'rb')
+            # f = io.TextIOWrapper(t.file)
+            # reader = csv.DictReader(file)
+            # reader = csv.DictReader(file)
+            reader = csv.DictReader(io.StringIO(t.file.read().decode('utf-8',errors='ignore')))
+            print(reader)
+            ser = ProcessCSVdata(reader,modified_by['modified_by'])
             if ser == "Redirect":
                 return Response("Redirect")
             return Response(status=200)
         except Exception as e:
-            return Response(e, status=500)
-
+            print(e)
+            return Response(e,status=500)
 
 class InsertMarkingSchemeView(APIView):  # Insert Marking Scheme API
     authentication_classes = (TokenAuthentication,)
