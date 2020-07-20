@@ -42,6 +42,7 @@ urlpatterns = [
     re_path('getUserRoleLocation/(?P<schoolID>\d+)&(?P<type>[\w.@+-]+)/$', views.GetUserRoleLocationView.as_view()),
     path('getUserSearch/',views.UserSearch.as_view()),
 
+   
     #user portal
     path('registerteacher', TeacherRegisterAPI.as_view()),
     path('registerschool', SchoolRegisterAPI.as_view()),
