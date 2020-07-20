@@ -16,7 +16,7 @@ class competition(models.Model):
 class AgeGroup(models.Model):
     AgeGroupID = models.AutoField(db_column='AgeGroupID', primary_key=True)
     AgeGroupName = models.CharField(db_column='AgeGroupName',max_length=30)
-    created_on = models.DateField()
+    created_on = models.DateTimeField()
 
 class AgeGroupClass(models.Model):
     AgeGroupClassID = models.AutoField(db_column='AgeGroupClassID', primary_key=True)
@@ -78,3 +78,4 @@ class studentResponse(models.Model):
     optionTranslationID = models.ForeignKey(optionTranslation, default=1,null=True,to_field='optionTranslationID', db_column='optionTranslationID', on_delete=models.CASCADE)
     ansText = models.CharField(max_length=20,null=True)
     time = models.FloatField()
+
