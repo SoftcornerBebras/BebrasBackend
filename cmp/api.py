@@ -179,7 +179,10 @@ class getCmpQuestionAPI(generics.GenericAPIView):
           print(cmpquest.questionID,cmpage.AgeGroupClassID.AgeGroupID)
           try:
              studentrespon=studentResponse.objects.get(studentEnrollmentID=studentEnrollmentlanguagecode,competitionQuestionID=cmpquest)
-             questiondata['answered']=True
+             if studentrespon.ansText==None and studentrespon.optionTranslationID==None:
+               questiondata['answered']=False
+             else:
+               questiondata['answered']=True
              testattempted=True
           except:
              questiondata['answered']=False
@@ -1284,37 +1287,55 @@ class CustomizePPT(APIView):
                     if shape.has_text_frame:
                         for paragraph in shape.text_frame.paragraphs:
                             for run in paragraph.runs:
-                                if (shape.text.find('Name')) != -1:
-                                    cur_text = run.text
+                              if (shape.text.lower().find('name')) != -1:
+                                  if(run.text.lower().find('name')!=-1):
+                                    start=run.text.lower().find('name')
+                                    end=run.text.lower().find('name')+len('name')
                                     nameofPDF=data[i]['Name']+'-'+data[i]['loginID']+'-'+str(data[i]['year'])
                                     NamesOfParticipants.append(nameofPDF)
-                                    new_text = cur_text.replace(str('Name'), str(data[i]['Name']))
-                                    run.text = new_text
-                                if (shape.text.find('year')) != -1:
                                     cur_text = run.text
-                                    new_text = cur_text.replace(str('year'), str(data[i]['year']))
+                                    new_text = cur_text.replace(run.text[start:end], str(data[i]['Name']))
                                     run.text = new_text
-                                if (shape.text.find('class')) != -1:
+                              if (shape.text.lower().find('year')) != -1:
+                                  if (run.text.lower().find('year') != -1):
+                                    start = run.text.lower().find('year')
+                                    end = run.text.lower().find('year') + len('year')
                                     cur_text = run.text
-                                    new_text = cur_text.replace(str('class'), str(data[i]['class']))
+                                    new_text = cur_text.replace(run.text[start:end], str(data[i]['year']))
                                     run.text = new_text
-                                if (shape.text.find('group')) != -1:
+                              if (shape.text.lower().find('class')) != -1:
+                                  if (run.text.lower().find('class') != -1):
+                                    start = run.text.lower().find('class')
+                                    end = run.text.lower().find('class') + len('class')
                                     cur_text = run.text
-                                    new_text = cur_text.replace(str('group'), str(data[i]['group']))
+                                    new_text = cur_text.replace(run.text[start:end], str(data[i]['class']))
                                     run.text = new_text
-                                if (shape.text.find('score')) != -1:
+                              if (shape.text.lower().find('group')) != -1:
+                                  if (run.text.lower().find('group') != -1):
+                                    start = run.text.lower().find('group')
+                                    end = run.text.lower().find('group') + len('group')
                                     cur_text = run.text
-                                    new_text = cur_text.replace(str('score'), str(data[i]['score']))
+                                    new_text = cur_text.replace(run.text[start:end], str(data[i]['group']))
                                     run.text = new_text
-                                if (shape.text.find('total')) != -1:
+                              if (shape.text.lower().find('score')) != -1:
+                                  if (run.text.lower().find('score') != -1):
+                                    start = run.text.lower().find('score')
+                                    end = run.text.lower().find('score') + len('score')
                                     cur_text = run.text
-                                    new_text = cur_text.replace(str('total'), str(data[i]['total']))
+                                    new_text = cur_text.replace(run.text[start:end], str(data[i]['score']))
                                     run.text = new_text
-                                if (shape.text.find('[')) != -1:
+                              if (shape.text.lower().find('total')) != -1:
+                                  if (run.text.lower().find('total') != -1):
+                                    start = run.text.lower().find('total')
+                                    end = run.text.lower().find('total') + len('total')
+                                    cur_text = run.text
+                                    new_text = cur_text.replace(run.text[start:end], str(data[i]['total']))
+                                    run.text = new_text  
+                              if (shape.text.find('[')) != -1:
                                     cur_text = run.text
                                     new_text = cur_text.replace(str('['), str(''))
                                     run.text = new_text
-                                if (shape.text.find(']')) != -1:
+                              if (shape.text.find(']')) != -1:
                                     cur_text = run.text
                                     new_text = cur_text.replace(str(']'), str(''))
                                     run.text = new_text
