@@ -42,7 +42,7 @@ class LoginAPI(generics.GenericAPIView):
                 user1=User.objects.get(loginID=request.data['loginID'])
                 pass_decrypt=decrypt(user1.password)
                 print(pass_decrypt)
-                if(pass_decrypt==request.data['password']):
+                if(pass_decrypt==request.data['password'].strip()):
                   print("Password and loginID correct: ",user1.loginID)
                   user1.last_login=datetime.now()
                   user1.save()
@@ -84,11 +84,12 @@ class TeacherRegisterAPI(generics.GenericAPIView):
     def post(self, request):
       try:
         print("Recieved a request ",request.data)
-        pass_encrypt=encrypt(request.data['password'])
+        pass_encrypt=encrypt(request.data['password'].strip())
         request.data['password']=pass_encrypt
-        Code=code.objects.get(codeName=request.data['gender'])
+        Code=code.objects.get(codeName=request.data['gender'],codeGroupID=gender)
         school1=school.objects.get(schoolID=request.data['school'])
         request.data['gender']=Code.codeID
+        request.data['email']=request.data['email'].strip()
         request.data['loginID']=request.data['email']
         del request.data['school']
         print(request.data)
@@ -103,6 +104,8 @@ class TeacherRegisterAPI(generics.GenericAPIView):
           school1.modified_by=user.loginID
           school1.save()
           user.created_by=user.loginID
+          user.created_on=datetime.now()
+          user.modified_on=datetime.now()
           user.modified_by=user.loginID
           user.save()
           userroledata['userID']=uid  #userroledata used from constants.py
@@ -221,10 +224,10 @@ class StudentRegisterAPI(generics.GenericAPIView):
     def post(self, request):
       try:
         print("Received a request ",request.data)
-        Firstname=request.data['firstName']
-        Lastname=request.data['lastName']
+        Firstname=request.data['firstName'].strip()
+        Lastname=request.data['lastName'].strip()
         username=Firstname+" "+Lastname
-        Code=code.objects.get(codeName=request.data['gender'])
+        Code=code.objects.get(codeName=request.data['gender'],codeGroupID=gender)
         request.data['gender']=Code.codeID
         request.data['username']=username
         loginID=StudentRegisterAPI.loginID_generator(Firstname,Lastname)
@@ -250,6 +253,8 @@ class StudentRegisterAPI(generics.GenericAPIView):
           user=User.objects.get(loginID=loginID)
           userloggedin=User.objects.get(userID=request.user.userID)
           user.created_by=userloggedin.loginID
+          user.created_on=datetime.now()
+          user.modified_on=datetime.now()
           user.modified_by=userloggedin.loginID
           codeid=code.objects.get(codeID=active)
           user.is_active=codeid
@@ -285,10 +290,10 @@ class StudentBulkRegisterAPI(generics.GenericAPIView):
           #requesting StudentRegister API
           try:
             print(data)
-            Firstname=data['firstName']
-            Lastname=data['lastName']
+            Firstname=data['firstName'].strip()
+            Lastname=data['lastName'].strip()
             username=Firstname+" "+Lastname
-            Code=code.objects.get(codeName=data['gender'])
+            Code=code.objects.get(codeName=data['gender'],codeGroupID=gender)
             data['gender']=Code.codeID
             data['username']=username
             loginID=StudentRegisterAPI.loginID_generator(Firstname,Lastname)
@@ -314,6 +319,8 @@ class StudentBulkRegisterAPI(generics.GenericAPIView):
               user=User.objects.get(loginID=loginID)
               userloggedin=User.objects.get(userID=request.user.userID)
               user.created_by=userloggedin.loginID
+              user.created_on=datetime.now()
+              user.modified_on=datetime.now()
               user.modified_by=userloggedin.loginID
               codeid=code.objects.get(codeID=active)
               user.is_active=codeid
@@ -356,10 +363,11 @@ class TeacherRegistrationAPI(generics.GenericAPIView):
     def post(self, request):
       try:
         print("Received a request ",request.data,request.data['password'])
-        pass_encrypt=encrypt(request.data['password'])
+        pass_encrypt=encrypt(request.data['password'].strip())
         request.data['password']=pass_encrypt
-        Code=code.objects.get(codeName=request.data['gender'])
+        Code=code.objects.get(codeName=request.data['gender'],codeGroupID=gender)
         request.data['gender']=Code.codeID
+        request.data['email']=request.data['email'].strip()
         request.data['loginID']=request.data['email']
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
@@ -369,6 +377,8 @@ class TeacherRegistrationAPI(generics.GenericAPIView):
           user=User.objects.get(email=request.data['email'])
           userloggedin=User.objects.get(userID=request.user.userID)
           user.created_by=userloggedin.loginID
+          user.created_on=datetime.now()
+          user.modified_on=datetime.now()
           user.modified_by=userloggedin.loginID
           codeid=code.objects.get(codeID=active)
           user.is_active=codeid
@@ -487,10 +497,10 @@ class SchoolRegisterAPI(generics.GenericAPIView):
         serializer = AddAddressSerializer(data=addressdata)
         if serializer.is_valid():
           address = serializer.save()
-          typecode=code.objects.get(codeName=schooldata['schoolType'])
+          typecode=code.objects.get(codeName=schooldata['schoolType'],codeGroupID=schooltype)
           print("address saved")
           schooldata['schoolTypeCodeID']=typecode.codeID
-          typecode=code.objects.get(codeName=schooldata['schoolGroupID'])
+          typecode=code.objects.get(codeName=schooldata['schoolGroupID'],codeGroupID=schoolGroupID)
           schooldata['schoolGroupID']=typecode.codeID
           schooldata['addressID']=address.addressID
           del schooldata['schoolType']
@@ -616,7 +626,7 @@ class ResetPasswordView(APIView):
 
     def post(self, request, *args, **kwargs):
         print((request.data))
-        associated_users = User.objects.get(loginID=request.data['loginID'])
+        associated_users = User.objects.get(loginID=request.data['loginID'].strip())
         print(associated_users)
         if associated_users:
             userrole=UserRole.objects.get(userID=associated_users.userID)
@@ -699,7 +709,7 @@ class ContactUsMailApi(APIView):
     def sendmail(self, request):
 
         c = {
-            'email': request.data['email'],
+            'email': request.data['email'].strip(),
             'domain': request.META['HTTP_HOST'],
             'site_name': 'Bebras Admin',
             'protocol': 'http',
@@ -725,7 +735,7 @@ class ContactUsMailApi(APIView):
 
     def post(self, request, *args, **kwargs):
         print((request.data))
-        if request.data['email']:
+        if request.data['email'].strip():
             self.sendmail(request)
             return Response("Thank you! Our helpdesk will contact you within 24 hours.")
         else:
