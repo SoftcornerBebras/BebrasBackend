@@ -53,8 +53,8 @@ class school(models.Model):
     tag=models.CharField(max_length=100)
     phone=PhoneNumberField(null=False)
     registered_By=models.CharField(max_length=100,null=False)
-    registered_On=models.DateField(auto_now_add=True)
-    modified_on = models.DateField(auto_now_add=True)
+    registered_On=models.DateTimeField()
+    modified_on = models.DateTimeField()
     modified_by = models.CharField(max_length=50, default='default value')
 
 class schoolClass(models.Model):
