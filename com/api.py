@@ -72,7 +72,7 @@ class CompetitionNameForCertificatesAPI(APIView):
         print(list(compAge))
         for data in compAge:
           endDate=data.competitionID.endDate
-          if endDate.date() < datetime.now().date() and data.competitionID.competitionType.codeName==main_challenge:
+          if endDate.date() < datetime.now().date() and data.competitionID.competitionType.codeID==main_challenge:
             print(data.competitionID.competitionName)
             sclassid=data.AgeGroupClassID.ClassID.classID
             if sclassid==int(request.data['class_id']):
@@ -100,7 +100,7 @@ class CompetitionNameAPI(APIView):
         print(list(compAge))
         for data in compAge:
           startDate=data.competitionID.startDate
-          if startDate.date() > datetime.now().date() and data.competitionID.competitionType.codeName==main_challenge:
+          if startDate.date() > datetime.now().date() and data.competitionID.competitionType.codeID==main_challenge:
             print(data.competitionID.competitionName)
             sclassid=data.AgeGroupClassID.ClassID.classID
             if sclassid==int(request.data['class_id']):
