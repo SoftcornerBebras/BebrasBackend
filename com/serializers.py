@@ -78,7 +78,7 @@ class SchoolSerializers(serializers.ModelSerializer):
     codenameRef=code.objects.get(codeName=codenameID,codeGroupID=codegrp.codeGroupID)
     group=school_group.pop('codeName')
     groupRef = code.objects.get(codeName=group)
-    modified_on = datetime.now().date()
+    modified_on = datetime.now()
     modified_by = validated_data.get('modified_by')
     instance.schoolName = validated_data.get('schoolName', instance.schoolName)
     instance.UDISEcode = validated_data.get('UDISEcode', instance.UDISEcode)
