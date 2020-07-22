@@ -5,7 +5,7 @@ from rest_framework.schemas import get_schema_view
 from .api import *
 
 urlpatterns = [
-     path('insertMcqQues/',cpviews.InsertMcqQuestion.as_view()),
+      path('insertMcqQues/',cpviews.InsertMcqQuestion.as_view()),
      path('insertMcqWithImgsQues/',cpviews.InsertMcqWithImagesQuestion.as_view()),
      path('getCompetition/',cpviews.GetCompetition.as_view()),
      path('getYears/',cpviews.GetDistinctYears.as_view()),
@@ -58,6 +58,8 @@ urlpatterns = [
      path('insertCmpAge/',cpviews.InsertOnlyCmpAge.as_view()),
      path('insertCmpQues/',cpviews.InsertCmpQues.as_view()),
      path('updateCmp/',cpviews.UpdateCmp.as_view()),
+     path('deleteCmpQues/',cpviews.DeleteCmpQues.as_view()),
+     path('addCmpQues/',cpviews.AddCmpQues.as_view()),
      path('updateAgeGrp/',cpviews.UpdateAgeGrp.as_view()),
      path('checkUpdateAgeGrp/',cpviews.CheckAgeGrp.as_view()),
      path('updateMarks/',cpviews.UpdateMarkingScheme.as_view()),
