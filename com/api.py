@@ -79,6 +79,7 @@ class CompetitionNameForCertificatesAPI(APIView):
                 cmpNames.append(data.competitionID.competitionName)
                 print(cmpNames)
         print(cmpNames)
+        print(dict.fromkeys(cmpNames))
         cmpNames = list(dict.fromkeys(cmpNames))
         cmpNames.reverse()
         print(cmpNames)
