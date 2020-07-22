@@ -64,7 +64,7 @@ class QuestionPageView(APIView):                  # Get all Questions API
 
     def get(self,request):
         try:
-            queryset = correctOption.objects.all().order_by('-correctOptionID')
+            queryset = correctOption.objects.all().order_by('-questionTranslationID__modified_on')
             paginator = CustomPagination()
             response = paginator.generate_response(queryset,GetCorrectOption,request)
             qtransIds = []
@@ -164,21 +164,21 @@ class QuestionSearch(APIView):
     def post(self,request):
         try:
             feed = request.data['feed']
-            codes = code.objects.filter(Q(codeName__contains = feed)).values_list('codeID', flat=True)
+            codes = code.objects.filter(Q(codeName__icontains = feed)).values_list('codeID', flat=True)
             codeID = list(codes)
-            country = Countries.objects.filter(Q(nicename__contains = feed)).values_list('countryID',flat=True)
+            country = Countries.objects.filter(Q(nicename__icontains = feed)).values_list('countryID',flat=True)
             countryID = list(country)
             ques = question.objects.filter(Q(domainCodeID__in = codeID) |Q( questionTypeCodeID__in = codeID) | Q(countryID__in = countryID)).values_list('questionID', flat=True)
             quesID = list(ques)
-            quesTrans = questionTranslation.objects.filter(Q(questionID__in = quesID) | Q(translation__contains = feed) | Q(Identifier__contains = feed) | Q(languageCodeID__in = codeID)).values_list('questionTranslationID', flat=True)
+            quesTrans = questionTranslation.objects.filter(Q(questionID__in = quesID) | Q(translation__icontains = feed) | Q(Identifier__icontains = feed) | Q(languageCodeID__in = codeID)).values_list('questionTranslationID', flat=True)
             quesTransID = list(quesTrans)
             query= correctOption.objects.filter(questionTranslationID__in = quesTransID)
             serializer = GetCorrectOption(query,many=True)
-            finalQues = questionTranslation.objects.filter(Q(questionID__in = quesID) | Q(translation__contains = feed) | Q(Identifier__contains = feed) | Q(languageCodeID__in = codeID)).values_list('questionID', flat=True)
+            finalQues = questionTranslation.objects.filter(Q(questionID__in = quesID) | Q(translation__icontains = feed) | Q(Identifier__icontains = feed) | Q(languageCodeID__in = codeID)).values_list('questionID', flat=True)
             finalQuesID = list(finalQues)
             opts = option.objects.filter(questionID__in=finalQuesID).values_list('optionID', flat=True)
             optList = list(opts)
-            langCodes = questionTranslation.objects.filter(Q(questionID__in = quesID) | Q(translation__contains = feed) | Q(Identifier__contains = feed) | Q(languageCodeID__in = codeID)).values_list('languageCodeID', flat=True)
+            langCodes = questionTranslation.objects.filter(Q(questionID__in = quesID) | Q(translation__icontains = feed) | Q(Identifier__icontains = feed) | Q(languageCodeID__in = codeID)).values_list('languageCodeID', flat=True)
             lang = list(langCodes)
             optTrans = optionTranslation.objects.filter(optionID__in=optList,languageCodeID__in = lang)
             serializerF = GetAllTranslatedOptions(optTrans,many=True)
@@ -187,6 +187,7 @@ class QuestionSearch(APIView):
             "Options":serializerF.data
         })
         except Exception as e:
+            print(e)
             return Response(e,status=500)
 
 class EditPreviousQuestion(APIView):
