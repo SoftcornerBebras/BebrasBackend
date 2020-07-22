@@ -39,7 +39,7 @@ class User(AbstractBaseUser):
     email = models.CharField(max_length=70,null=True)
     created_on = models.DateTimeField(auto_now_add=True)
     created_by = models.CharField(max_length=50, default='default value')
-    modified_on = models.DateTimeField()
+    modified_on = models.DateTimeField(auto_now_add=True)
     modified_by = models.CharField(max_length=50, default='default value')
     is_active = models.ForeignKey(code,related_name='is_active',db_column='is_active',default=106001,to_field='codeID',on_delete=models.CASCADE)
     USERNAME_FIELD = 'loginID'
