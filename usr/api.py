@@ -517,6 +517,9 @@ class SchoolRegisterAPI(generics.GenericAPIView):
             serializer = AddSchoolSerializer(data=schooldata)
             if serializer.is_valid():
               school1 = serializer.save()
+              school1.registered_On=datetime.now()
+              school1.modified_on=datetime.now()
+              school1.save()
               print("school saved")
               for i in cl:
                 schoolclassdata1["schoolID"]=school1.schoolID
@@ -551,6 +554,9 @@ class SchoolRegisterAPI(generics.GenericAPIView):
             serializer = AddSchoolSerializer(data=schooldata)
             if serializer.is_valid():
               school1 = serializer.save()
+              school1.registered_On=datetime.now()
+              school1.modified_on=datetime.now()
+              school1.save()
               print("school saved")
               for i in cl:
                 schoolclassdata1["schoolID"]=school1.schoolID
