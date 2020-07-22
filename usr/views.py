@@ -75,7 +75,7 @@ class UpdateView(APIView):                          #User Details- Update API
              id = UserRole.objects.get(userRoleID = kwargs['userRoleID'])
              serializers = UserRoleInsertUpdateSerializer(instance=id, data = request.data,partial=True)
              serializers.is_valid(raise_exception=True)
-             serializers.save(modified_on = datetime.now().date() )
+             serializers.save(modified_on = datetime.now())
              return Response(serializers.data)
          except Exception as e:
             return Response(e,status=500)
@@ -90,7 +90,7 @@ class UpdateProfileView(APIView):                 #Update API Admin and Author P
              id = User.objects.get(userID = kwargs['userID'])
              serializers = UserInsertUpdateSerializer(instance=id, data = request.data,partial=True)
              serializers.is_valid(raise_exception=True)
-             serializers.save(modified_on = datetime.now().date() )
+             serializers.save(modified_on = datetime.now())
              return Response(serializers.data)
          except Exception as e:
             return Response(e,status=500)
@@ -128,7 +128,7 @@ class UserPageView(APIView):                       #Get All Users API
 
     def get(self,request):
         try:
-            queryset = UserRole.objects.all().order_by('-userRoleID')
+            queryset = UserRole.objects.all().order_by('-userID__modified_on')
             paginator = CustomPagination()
             response = paginator.generate_response(queryset,UserRoleSerializer,request)
             return Response(response.data)
@@ -281,7 +281,7 @@ class ChangePasswordView(APIView):              #API for Change Password
                     return Response({'old_password': ['Wrong password.']},
                                     status=status.HTTP_400_BAD_REQUEST)
                 user.password = encrypt(serializer.data.get('new_password'))
-                user.modified_on = datetime.now().date()
+                user.modified_on = datetime.now()
                 user.modified_by = request.data['loginID']
                 user.save()
                 return Response({'status': 'password set'}, status=status.HTTP_200_OK)
@@ -322,8 +322,8 @@ class UserSearch(APIView):
     def post(self,request):
         try:
             feed = request.data['feed']
-            usrdata=User.objects.filter(Q(created_by__contains = feed) | Q(modified_by__contains = feed) | Q(username__contains = feed) | Q(loginID__contains = feed) | Q(created_on__contains = feed)).values_list('userID', flat=True)
-            role = Role.objects.filter(Q(RoleName__contains = feed)).values_list('RoleID', flat=True)
+            usrdata=User.objects.filter(Q(created_by__icontains = feed) | Q(modified_by__icontains = feed) | Q(username__icontains = feed) | Q(loginID__icontains = feed) | Q(created_on__icontains = feed)).values_list('userID', flat=True)
+            role = Role.objects.filter(Q(RoleName__icontains = feed)).values_list('RoleID', flat=True)
             userID = list(usrdata)
             roleID = list(role)
             query = UserRole.objects.filter(Q(userID__in = userID)| Q(RoleID__in = roleID))
@@ -399,6 +399,4 @@ class GetRegisteredBy(APIView):                          #Get Details of teacher
             return Response(serializer.data)
         except Exception as e:
             return Response(e,status=500)
-
-
 
