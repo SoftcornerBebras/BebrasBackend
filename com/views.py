@@ -111,7 +111,7 @@ class SchoolPageView(APIView):             #Get all Schools with Details API
 
     def get(self,request):
         try:
-            queryset = school.objects.all().order_by('-schoolID')
+            queryset = school.objects.all().order_by('-modified_on')
             paginator = CustomPagination()
             response = paginator.generate_response(queryset,SchoolSerializers,request)
             return Response(response.data)
@@ -439,12 +439,13 @@ class SchoolSearch(APIView):
     def post(self,request):
         try:
             feed = request.data['feed']
-            state = States.objects.filter(Q(name__contains = feed)).values_list('stateID', flat=True)
+            state = States.objects.filter(Q(name__icontains = feed)).values_list('stateID', flat=True)
             stateID = list(state)
-            add = Address.objects.filter(Q(city__contains = feed) |Q( stateID__in = stateID)).values_list('addressID', flat=True)
+            add = Address.objects.filter(Q(city__icontains = feed) |Q( stateID__in = stateID)).values_list('addressID', flat=True)
             addressID = list(add)
-            query= school.objects.filter(Q(schoolName__contains = feed) | Q(UDISEcode__contains = feed) | Q(addressID__in = addressID))
+            query= school.objects.filter(Q(schoolName__icontains = feed) | Q(UDISEcode__icontains = feed) | Q(addressID__in = addressID))
             serializer = SchoolSerializers(query,many=True)
             return Response(serializer.data)
         except Exception as e:
             return Response(e,status=500)
+
