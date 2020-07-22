@@ -83,7 +83,7 @@ class InsertMcqQuesSerializer(serializers.ModelSerializer):
                 if (ImageTypeRef.codeName == "ImageQuestion"):
                     img = Image.objects.create(ImageName=imageNameList[i], ImageTypeCodeID=ImageTypeRef, ObjectID=ques.questionID,
                                                uploadedFile=imageUrlList[i])
-        modified_on = datetime.now().date()
+        modified_on = datetime.now()
         quesTrans = questionTranslation.objects.create(questionID=ques, languageCodeID=langCodeRef,
                                                        translation=translation,Identifier=identifier,modified_by=modified_by,
                                                        modified_on=modified_on)
@@ -218,7 +218,7 @@ class InsertMcqWithImagesQuesSerializer(serializers.ModelSerializer):
                 if (ImageTypeRef.codeName == "ImageQuestion"):
                     img = Image.objects.create(ImageName=imageNameList[i], ImageTypeCodeID=ImageTypeRef, ObjectID=ques.questionID,
                                                uploadedFile=imageUrlList[i])
-        modified_on = datetime.now().date()
+        modified_on = datetime.now()
         quesTrans = questionTranslation.objects.create(questionID=ques, languageCodeID=langCodeRef,
                                                        translation=translation, modified_by=modified_by,
                                                        modified_on=modified_on,Identifier=identifier)
@@ -236,10 +236,11 @@ class InsertMcqWithImagesQuesSerializer(serializers.ModelSerializer):
             imagenameo = y1['imageID']['ImageName']
             imageurlo = y1['imageID']['uploadedFile']
             imagetype = y1['imageID']['ImageTypeCodeID']
-            ImageTypeRef = code.objects.get(codeName=imagetype['codeName'])
-            if (ImageTypeRef.codeName == "ImageOption"):
-                img = Image.objects.create(ImageName=imagenameo, ImageTypeCodeID=ImageTypeRef, ObjectID=opt.optionID,
-                                           uploadedFile=imageurlo)
+            if imagenameo != "":
+                ImageTypeRef = code.objects.get(codeName=imagetype['codeName'])
+                if (ImageTypeRef.codeName == "ImageOption"):
+                    img = Image.objects.create(ImageName=imagenameo, ImageTypeCodeID=ImageTypeRef, ObjectID=opt.optionID,
+                                               uploadedFile=imageurlo)
 
         else:
             opt = option.objects.create(questionID=ques)
@@ -262,10 +263,11 @@ class InsertMcqWithImagesQuesSerializer(serializers.ModelSerializer):
             imagenameo = y1['imageID']['ImageName']
             imageurlo = y1['imageID']['uploadedFile']
             imagetype = y1['imageID']['ImageTypeCodeID']
-            ImageTypeRef = code.objects.get(codeName=imagetype['codeName'])
-            if (ImageTypeRef.codeName == "ImageOption"):
-                img = Image.objects.create(ImageName=imagenameo, ImageTypeCodeID=ImageTypeRef, ObjectID=opt.optionID,
-                                           uploadedFile=imageurlo)
+            if imagenameo != "":
+                ImageTypeRef = code.objects.get(codeName=imagetype['codeName'])
+                if (ImageTypeRef.codeName == "ImageOption"):
+                    img = Image.objects.create(ImageName=imagenameo, ImageTypeCodeID=ImageTypeRef, ObjectID=opt.optionID,
+                                               uploadedFile=imageurlo)
 
         else:
             opt = option.objects.create(questionID=ques)
@@ -275,10 +277,11 @@ class InsertMcqWithImagesQuesSerializer(serializers.ModelSerializer):
             imagenameo =y1['imageID']['ImageName']
             imageurlo = y1['imageID']['uploadedFile']
             imagetype = y1['imageID']['ImageTypeCodeID']
-            ImageTypeRef = code.objects.get(codeName=imagetype['codeName'])
-            if (ImageTypeRef.codeName == "ImageOption"):
-                img = Image.objects.create(ImageName=imagenameo, ImageTypeCodeID=ImageTypeRef, ObjectID=opt.optionID,
-                                           uploadedFile=imageurlo)
+            if imagenameo != "":
+                ImageTypeRef = code.objects.get(codeName=imagetype['codeName'])
+                if (ImageTypeRef.codeName == "ImageOption"):
+                    img = Image.objects.create(ImageName=imagenameo, ImageTypeCodeID=ImageTypeRef, ObjectID=opt.optionID,
+                                               uploadedFile=imageurlo)
         if y['option3']['caption']['option'] == y['correctOption']:
             opt = option.objects.create(questionID=ques)
             y1 = y['option3']
@@ -288,10 +291,11 @@ class InsertMcqWithImagesQuesSerializer(serializers.ModelSerializer):
             imagenameo = y1['imageID']['ImageName']
             imageurlo = y1['imageID']['uploadedFile']
             imagetype = y1['imageID']['ImageTypeCodeID']
-            ImageTypeRef = code.objects.get(codeName=imagetype['codeName'])
-            if (ImageTypeRef.codeName == "ImageOption"):
-                img = Image.objects.create(ImageName=imagenameo, ImageTypeCodeID=ImageTypeRef, ObjectID=opt.optionID,
-                                           uploadedFile=imageurlo)
+            if imagenameo != "":
+                ImageTypeRef = code.objects.get(codeName=imagetype['codeName'])
+                if (ImageTypeRef.codeName == "ImageOption"):
+                    img = Image.objects.create(ImageName=imagenameo, ImageTypeCodeID=ImageTypeRef, ObjectID=opt.optionID,
+                                               uploadedFile=imageurlo)
 
         else:
             opt = option.objects.create(questionID=ques)
@@ -301,10 +305,11 @@ class InsertMcqWithImagesQuesSerializer(serializers.ModelSerializer):
             imagenameo = y1['imageID']['ImageName']
             imageurlo = y1['imageID']['uploadedFile']
             imagetype = y1['imageID']['ImageTypeCodeID']
-            ImageTypeRef = code.objects.get(codeName=imagetype['codeName'])
-            if (ImageTypeRef.codeName == "ImageOption"):
-                img = Image.objects.create(ImageName=imagenameo, ImageTypeCodeID=ImageTypeRef, ObjectID=opt.optionID,
-                                           uploadedFile=imageurlo)
+            if imagenameo != "":
+                ImageTypeRef = code.objects.get(codeName=imagetype['codeName'])
+                if (ImageTypeRef.codeName == "ImageOption"):
+                    img = Image.objects.create(ImageName=imagenameo, ImageTypeCodeID=ImageTypeRef, ObjectID=opt.optionID,
+                                               uploadedFile=imageurlo)
         if y['option4']['caption']['option'] == y['correctOption']:
             opt = option.objects.create(questionID=ques)
             y1 = y['option4']
@@ -314,10 +319,11 @@ class InsertMcqWithImagesQuesSerializer(serializers.ModelSerializer):
             imagenameo = y1['imageID']['ImageName']
             imageurlo = y1['imageID']['uploadedFile']
             imagetype = y1['imageID']['ImageTypeCodeID']
-            ImageTypeRef = code.objects.get(codeName=imagetype['codeName'])
-            if (ImageTypeRef.codeName == "ImageOption"):
-                img = Image.objects.create(ImageName=imagenameo, ImageTypeCodeID=ImageTypeRef, ObjectID=opt.optionID,
-                                           uploadedFile=imageurlo)
+            if imagenameo != "":
+                ImageTypeRef = code.objects.get(codeName=imagetype['codeName'])
+                if (ImageTypeRef.codeName == "ImageOption"):
+                    img = Image.objects.create(ImageName=imagenameo, ImageTypeCodeID=ImageTypeRef, ObjectID=opt.optionID,
+                                               uploadedFile=imageurlo)
 
         else:
             opt = option.objects.create(questionID=ques)
@@ -327,10 +333,11 @@ class InsertMcqWithImagesQuesSerializer(serializers.ModelSerializer):
             imagenameo = y1['imageID']['ImageName']
             imageurlo = y1['imageID']['uploadedFile']
             imagetype = y1['imageID']['ImageTypeCodeID']
-            ImageTypeRef = code.objects.get(codeName=imagetype['codeName'])
-            if (ImageTypeRef.codeName == "ImageOption"):
-                img = Image.objects.create(ImageName=imagenameo, ImageTypeCodeID=ImageTypeRef, ObjectID=opt.optionID,
-                                           uploadedFile=imageurlo)
+            if imagenameo != "":
+                ImageTypeRef = code.objects.get(codeName=imagetype['codeName'])
+                if (ImageTypeRef.codeName == "ImageOption"):
+                    img = Image.objects.create(ImageName=imagenameo, ImageTypeCodeID=ImageTypeRef, ObjectID=opt.optionID,
+                                               uploadedFile=imageurlo)
 
         corrOpt = correctOption.objects.create(questionTranslationID=quesTrans, optionTranslationID=correctOpt,
                                                **validated_data)
@@ -354,7 +361,7 @@ class InsertTranslationSerializer(serializers.ModelSerializer):
         identifier = quesTransID.pop('Identifier', None)
         questionTranslations = quesTransID.pop('translation',None)
         translation = questionTranslations['translation']
-        modified_on = datetime.now().date()
+        modified_on = datetime.now()
         quesTrans = questionTranslation.objects.create(questionID=quesID,languageCodeID=langCodeRef,
                                                        translation=translation,Identifier=identifier, modified_by=modified_by,
                                                        modified_on=modified_on)
@@ -484,13 +491,16 @@ class CompetitionSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         instance.competitionName = validated_data.get('competitionName',instance.competitionName)
-        instance.competitionInfo = validated_data.get('competitionInfo',instance.competitionInfo)
+        cmpinfo = validated_data.get('competitionInfo')
+        if cmpinfo == "-":
+            cmpinfo = ""
+        instance.competitionInfo = cmpinfo
         instance.startDate = validated_data.get('startDate',instance.startDate)
         instance.endDate = validated_data.get('endDate',instance.endDate)
         instance.testDuration = validated_data.get('testDuration', instance.testDuration)
         cmptype = validated_data.pop('competitionType')
         cmpTypeRef = code.objects.get(codeName= cmptype['codeName'])
-        instance.competitionType = validated_data.get('ccompetitionType',cmpTypeRef)
+        instance.competitionType = validated_data.get('competitionType',cmpTypeRef)
         instance.save()
         return instance
 
@@ -562,12 +572,69 @@ class UpdateQuestions(serializers.ModelSerializer):
                      cmpQues = QuestionAge.objects.create(AgeGroupID=AgeGroupNameRef, questionID=questID,
                                                              questionLevelCodeID=LevelID)
                  cnt = cnt+1
-        modified_on = datetime.now().date()
+        modified_on = datetime.now()
         questTransId.translation = quesTransID.get('translation',translation)
         questTransId.modified_by = quesTransID.get('modified_by',modified_by)
         questTransId.Identifier = quesTransID.get('Identifier',identifier)
         questTransId.modified_on = quesTransID.get('modified_on',modified_on)
         questTransId.save()
+        imageID = quesTranslation['imageID']
+        imageAnsID = quesTranslation['imageAnsID']
+        if imageID['ImageName']!="":
+            imageNameList = imageID['ImageName'].split(',')
+            imageUrlList = imageID['uploadedFile'].split(',')
+            imageTypeList = imageID['ImageTypeCodeID']['codeName'].split(',')
+        else:
+            imageNameList=[]
+        if imageAnsID['ImageName']!="":
+            imageANameList = imageAnsID['ImageName'].split(',')
+            imageAUrlList = imageAnsID['uploadedFile'].split(',')
+            imageATypeList = imageAnsID['ImageTypeCodeID']['codeName'].split(',')
+        else:
+            imageANameList=[]
+        if len(imageNameList) != 0:
+            ImageTypeRef = code.objects.get(codeName=imageTypeList[0])
+            if Image.objects.filter(ObjectID = questID.questionID,ImageTypeCodeID=ImageTypeRef.codeID).exists()==True:
+                imgQues = Image.objects.filter(ObjectID = questID.questionID,ImageTypeCodeID=ImageTypeRef.codeID)
+                imgobj = Image.objects.filter(ObjectID = questID.questionID,ImageTypeCodeID=ImageTypeRef.codeID).exclude(ImageName__in=imageNameList)
+                for i in range(0,len(imgobj)):
+                    os.remove(os.path.join(settings.MEDIA_ROOT) + ("/images//")+imgobj[i].ImageName)
+                    imgobj[i].delete()
+
+                if len(imageNameList)>0:
+                    for i in range(0,len(imageNameList)):
+                        if Image.objects.filter(ObjectID = questID.questionID,ImageTypeCodeID=ImageTypeRef.codeID,ImageName=imageNameList[i]).exists()==False:
+                            img = Image.objects.create(ImageName=imageNameList[i], ImageTypeCodeID=ImageTypeRef, ObjectID=questID.questionID,
+                                               uploadedFile=imageUrlList[i])
+            else:
+                if len(imageNameList)>0:
+                    for i in range(0, len(imageNameList)):
+                        ImageTypeRef = code.objects.get(codeName=imageTypeList[i])
+                        if (ImageTypeRef.codeName == "ImageQuestion"):
+                            img = Image.objects.create(ImageName=imageNameList[i], ImageTypeCodeID=ImageTypeRef, ObjectID=questID.questionID,
+                                                       uploadedFile=imageUrlList[i])
+
+
+        if len(imageANameList) != 0:
+            ImageTypeRef = code.objects.get(codeName=imageATypeList[0])
+            if Image.objects.filter(ObjectID = questID.questionID,ImageTypeCodeID=ImageTypeRef.codeID).exists()==True:
+                imgQues = Image.objects.filter(ObjectID = questID.questionID,ImageTypeCodeID=ImageTypeRef.codeID)
+                imgobj = Image.objects.filter(ObjectID = questID.questionID,ImageTypeCodeID=ImageTypeRef.codeID).exclude(ImageName__in=imageANameList)
+                for i in range(0,len(imgobj)):
+                    os.remove(os.path.join(settings.MEDIA_ROOT) + ("/images//")+imgobj[i].ImageName)
+                    imgobj[i].delete()
+
+                if len(imageANameList)>0:
+                    for i in range(0,len(imageANameList)):
+                        if Image.objects.filter(ObjectID = questID.questionID,ImageTypeCodeID=ImageTypeRef.codeID,ImageName=imageANameList[i]).exists()==False:
+                            img = Image.objects.create(ImageName=imageANameList[i], ImageTypeCodeID=ImageTypeRef, ObjectID=questID.questionID,
+                                               uploadedFile=imageAUrlList[i])
+            else:
+                if len(imageANameList)>0:
+                    for i in range(0, len(imageANameList)):
+                        ImageTypeRef = code.objects.get(codeName=imageATypeList[i])
+                        img = Image.objects.create(ImageName=imageANameList[i], ImageTypeCodeID=ImageTypeRef, ObjectID=questID.questionID,
+                                                   uploadedFile=imageAUrlList[i])
         optID = OptTransID.get('translationO')
         y = optID['translationO']
         if y['ansText'] == "":
@@ -585,12 +652,48 @@ class UpdateQuestions(serializers.ModelSerializer):
                 inst.save()
                 lists[0].get('optionTranslationID').update(t)
                 corropt = optTrans1[0]
+                y1 = y['option1']
+                imagenameo = y1['imageID']['ImageName']
+                imageurlo = y1['imageID']['uploadedFile']
+                imagetype = y1['imageID']['ImageTypeCodeID']
+                ImageTypeRef = code.objects.get(codeName=imagetype['codeName'])
+                if Image.objects.filter(ObjectID=optList[0].optionID,ImageTypeCodeID=ImageTypeRef.codeID).exists()==True:
+                    previmg = Image.objects.filter(ObjectID=optList[0].optionID,ImageTypeCodeID=ImageTypeRef.codeID)[0].ImageName
+                    if imagenameo != "":
+                        t = {"ImageName":imagenameo,
+                             "ObjectID":optList[0].optionID,
+                             "uploadedFile":imageurlo}
+                        inst = GetImages(instance=Image.objects.filter(ObjectID=optList[0].optionID,ImageTypeCodeID=ImageTypeRef.codeID)[0], data=collections.OrderedDict(t), partial=True)
+                        inst.is_valid(raise_exception=True)
+                        inst.save()
+                        os.remove(os.path.join(settings.MEDIA_ROOT) + ("/images//")+previmg)
+                else:
+                    img = Image.objects.create(ImageName=imagenameo, ImageTypeCodeID=ImageTypeRef, ObjectID=optList[0].optionID,
+                                           uploadedFile=imageurlo)
             else:
                 z=y['option1']['caption']
                 t = {"translationO":str(z)}
                 inst = OptionTranslationView(instance=optTrans1[0], data=collections.OrderedDict(t), partial=True)
                 inst.is_valid(raise_exception=True)
                 inst.save()
+                y1 = y['option1']
+                imagenameo = y1['imageID']['ImageName']
+                imageurlo = y1['imageID']['uploadedFile']
+                imagetype = y1['imageID']['ImageTypeCodeID']
+                ImageTypeRef = code.objects.get(codeName=imagetype['codeName'])
+                if Image.objects.filter(ObjectID=optList[0].optionID,ImageTypeCodeID=ImageTypeRef.codeID).exists()==True:
+                    previmg = Image.objects.filter(ObjectID=optList[0].optionID,ImageTypeCodeID=ImageTypeRef.codeID)[0].ImageName
+                    if imagenameo != "":
+                        t = {"ImageName":imagenameo,
+                             "ObjectID":optList[0].optionID,
+                             "uploadedFile":imageurlo}
+                        inst = GetImages(instance=Image.objects.filter(ObjectID=optList[0].optionID,ImageTypeCodeID=ImageTypeRef.codeID)[0], data=collections.OrderedDict(t), partial=True)
+                        inst.is_valid(raise_exception=True)
+                        inst.save()
+                        os.remove(os.path.join(settings.MEDIA_ROOT) + ("/images//")+previmg)
+                else:
+                    img = Image.objects.create(ImageName=imagenameo, ImageTypeCodeID=ImageTypeRef, ObjectID=optList[0].optionID,
+                                           uploadedFile=imageurlo)
             if y['correctOption'] == y['option2']['caption']['option']:
                  z=y['option2']['caption']
                  t = {"translationO":str(z)}
@@ -599,12 +702,48 @@ class UpdateQuestions(serializers.ModelSerializer):
                  inst.save()
                  lists[0].get('optionTranslationID').update(t)
                  corropt=optTrans2[0]
+                 y1 = y['option2']
+                 imagenameo = y1['imageID']['ImageName']
+                 imageurlo = y1['imageID']['uploadedFile']
+                 imagetype = y1['imageID']['ImageTypeCodeID']
+                 ImageTypeRef = code.objects.get(codeName=imagetype['codeName'])
+                 if Image.objects.filter(ObjectID=optList[1].optionID,ImageTypeCodeID=ImageTypeRef.codeID).exists()==True:
+                    previmg = Image.objects.filter(ObjectID=optList[1].optionID,ImageTypeCodeID=ImageTypeRef.codeID)[0].ImageName
+                    if imagenameo != "":
+                        t = {"ImageName":imagenameo,
+                             "ObjectID":optList[1].optionID,
+                             "uploadedFile":imageurlo}
+                        inst = GetImages(instance=Image.objects.filter(ObjectID=optList[1].optionID,ImageTypeCodeID=ImageTypeRef.codeID)[0], data=collections.OrderedDict(t), partial=True)
+                        inst.is_valid(raise_exception=True)
+                        inst.save()
+                        os.remove(os.path.join(settings.MEDIA_ROOT) + ("/images//")+previmg)
+                 else:
+                    img = Image.objects.create(ImageName=imagenameo, ImageTypeCodeID=ImageTypeRef, ObjectID=optList[1].optionID,
+                                           uploadedFile=imageurlo)
             else:
                 z=y['option2']['caption']
                 t = {"translationO":str(z)}
                 inst = OptionTranslationView(instance=optTrans2[0], data=collections.OrderedDict(t), partial=True)
                 inst.is_valid(raise_exception=True)
                 inst.save()
+                y1 = y['option2']
+                imagenameo = y1['imageID']['ImageName']
+                imageurlo = y1['imageID']['uploadedFile']
+                imagetype = y1['imageID']['ImageTypeCodeID']
+                ImageTypeRef = code.objects.get(codeName=imagetype['codeName'])
+                if Image.objects.filter(ObjectID=optList[1].optionID,ImageTypeCodeID=ImageTypeRef.codeID).exists()==True:
+                    previmg = Image.objects.filter(ObjectID=optList[1].optionID,ImageTypeCodeID=ImageTypeRef.codeID)[0].ImageName
+                    if imagenameo != "":
+                        t = {"ImageName":imagenameo,
+                             "ObjectID":optList[1].optionID,
+                             "uploadedFile":imageurlo}
+                        inst = GetImages(instance=Image.objects.filter(ObjectID=optList[1].optionID,ImageTypeCodeID=ImageTypeRef.codeID)[0], data=collections.OrderedDict(t), partial=True)
+                        inst.is_valid(raise_exception=True)
+                        inst.save()
+                        os.remove(os.path.join(settings.MEDIA_ROOT) + ("/images//")+previmg)
+                else:
+                    img = Image.objects.create(ImageName=imagenameo, ImageTypeCodeID=ImageTypeRef, ObjectID=optList[1].optionID,
+                                           uploadedFile=imageurlo)
             if y['correctOption'] == y['option3']['caption']['option']:
                 z=y['option3']['caption']
                 t = {"translationO":str(z)}
@@ -613,12 +752,48 @@ class UpdateQuestions(serializers.ModelSerializer):
                 inst.save()
                 lists[0].get('optionTranslationID').update(t)
                 corropt=optTrans3[0]
+                y1 = y['option3']
+                imagenameo = y1['imageID']['ImageName']
+                imageurlo = y1['imageID']['uploadedFile']
+                imagetype = y1['imageID']['ImageTypeCodeID']
+                ImageTypeRef = code.objects.get(codeName=imagetype['codeName'])
+                if Image.objects.filter(ObjectID=optList[2].optionID,ImageTypeCodeID=ImageTypeRef.codeID).exists()==True:
+                    previmg = Image.objects.filter(ObjectID=optList[2].optionID,ImageTypeCodeID=ImageTypeRef.codeID)[0].ImageName
+                    if imagenameo != "":
+                        t = {"ImageName":imagenameo,
+                             "ObjectID":optList[2].optionID,
+                             "uploadedFile":imageurlo}
+                        inst = GetImages(instance=Image.objects.filter(ObjectID=optList[2].optionID,ImageTypeCodeID=ImageTypeRef.codeID)[0], data=collections.OrderedDict(t), partial=True)
+                        inst.is_valid(raise_exception=True)
+                        inst.save()
+                        os.remove(os.path.join(settings.MEDIA_ROOT) + ("/images//")+previmg)
+                else:
+                    img = Image.objects.create(ImageName=imagenameo, ImageTypeCodeID=ImageTypeRef, ObjectID=optList[2].optionID,
+                                           uploadedFile=imageurlo)
             else:
                 z=y['option3']['caption']
                 t = {"translationO":str(z)}
                 inst = OptionTranslationView(instance=optTrans3[0], data=collections.OrderedDict(t), partial=True)
                 inst.is_valid(raise_exception=True)
                 inst.save()
+                y1 = y['option3']
+                imagenameo = y1['imageID']['ImageName']
+                imageurlo = y1['imageID']['uploadedFile']
+                imagetype = y1['imageID']['ImageTypeCodeID']
+                ImageTypeRef = code.objects.get(codeName=imagetype['codeName'])
+                if Image.objects.filter(ObjectID=optList[2].optionID,ImageTypeCodeID=ImageTypeRef.codeID).exists()==True:
+                    previmg = Image.objects.filter(ObjectID=optList[2].optionID,ImageTypeCodeID=ImageTypeRef.codeID)[0].ImageName
+                    if imagenameo != "":
+                        t = {"ImageName":imagenameo,
+                             "ObjectID":optList[2].optionID,
+                             "uploadedFile":imageurlo}
+                        inst = GetImages(instance=Image.objects.filter(ObjectID=optList[2].optionID,ImageTypeCodeID=ImageTypeRef.codeID)[0], data=collections.OrderedDict(t), partial=True)
+                        inst.is_valid(raise_exception=True)
+                        inst.save()
+                        os.remove(os.path.join(settings.MEDIA_ROOT) + ("/images//")+previmg)
+                else:
+                    img = Image.objects.create(ImageName=imagenameo, ImageTypeCodeID=ImageTypeRef, ObjectID=optList[2].optionID,
+                                           uploadedFile=imageurlo)
             if y['correctOption'] == y['option4']['caption']['option']:
                 z=y['option4']['caption']
                 t = {"translationO":str(z)}
@@ -627,12 +802,48 @@ class UpdateQuestions(serializers.ModelSerializer):
                 inst.save()
                 lists[0].get('optionTranslationID').update(t)
                 corropt=optTrans4[0]
+                y1 = y['option4']
+                imagenameo = y1['imageID']['ImageName']
+                imageurlo = y1['imageID']['uploadedFile']
+                imagetype = y1['imageID']['ImageTypeCodeID']
+                ImageTypeRef = code.objects.get(codeName=imagetype['codeName'])
+                if Image.objects.filter(ObjectID=optList[3].optionID,ImageTypeCodeID=ImageTypeRef.codeID).exists()==True:
+                    previmg = Image.objects.filter(ObjectID=optList[3].optionID,ImageTypeCodeID=ImageTypeRef.codeID)[0].ImageName
+                    if imagenameo != "":
+                        t = {"ImageName":imagenameo,
+                             "ObjectID":optList[3].optionID,
+                             "uploadedFile":imageurlo}
+                        inst = GetImages(instance=Image.objects.filter(ObjectID=optList[3].optionID,ImageTypeCodeID=ImageTypeRef.codeID)[0], data=collections.OrderedDict(t), partial=True)
+                        inst.is_valid(raise_exception=True)
+                        inst.save()
+                        os.remove(os.path.join(settings.MEDIA_ROOT) + ("/images//")+previmg)
+                else:
+                    img = Image.objects.create(ImageName=imagenameo, ImageTypeCodeID=ImageTypeRef, ObjectID=optList[3].optionID,
+                                           uploadedFile=imageurlo)
             else:
                 z=y['option4']['caption']
                 t = {"translationO":str(z)}
                 inst = OptionTranslationView(instance=optTrans4[0], data=collections.OrderedDict(t), partial=True)
                 inst.is_valid(raise_exception=True)
                 inst.save()
+                y1 = y['option4']
+                imagenameo = y1['imageID']['ImageName']
+                imageurlo = y1['imageID']['uploadedFile']
+                imagetype = y1['imageID']['ImageTypeCodeID']
+                ImageTypeRef = code.objects.get(codeName=imagetype['codeName'])
+                if Image.objects.filter(ObjectID=optList[3].optionID,ImageTypeCodeID=ImageTypeRef.codeID).exists()==True:
+                    previmg = Image.objects.filter(ObjectID=optList[3].optionID,ImageTypeCodeID=ImageTypeRef.codeID)[0].ImageName
+                    if imagenameo != "":
+                        t = {"ImageName":imagenameo,
+                             "ObjectID":optList[3].optionID,
+                             "uploadedFile":imageurlo}
+                        inst = GetImages(instance=Image.objects.filter(ObjectID=optList[3].optionID,ImageTypeCodeID=ImageTypeRef.codeID)[0], data=collections.OrderedDict(t), partial=True)
+                        inst.is_valid(raise_exception=True)
+                        inst.save()
+                        os.remove(os.path.join(settings.MEDIA_ROOT) + ("/images//")+previmg)
+                else:
+                    img = Image.objects.create(ImageName=imagenameo, ImageTypeCodeID=ImageTypeRef, ObjectID=optList[3].optionID,
+                                           uploadedFile=imageurlo)
             Opt = corropt
             instance.optionTranslationID = lists[0].get('translationO',Opt)
             instance.save()
@@ -704,10 +915,13 @@ class CompetitionAgeSerializer(serializers.ModelSerializer):
         AgeGrpRef = AgeGroupClass.objects.filter(AgeGroupID=ageGrpRef.AgeGroupID)
         cmptname = Comp_Data.pop('competitionType',None)
         cmpTypeRef = code.objects.get(codeName=cmptname['codeName'])
-        cmpRef = competition.objects.create(competitionType=cmpTypeRef,**Comp_Data)
+        cmpinfo = Comp_Data.pop('competitionInfo',None)
+        if cmpinfo == "-":
+            cmpinfo = ""
+        cmpRef = competition.objects.create(competitionType=cmpTypeRef,competitionInfo=cmpinfo,**Comp_Data)
         cmpAge = ""
         for i in range(0,len(AgeGrpRef)):
-            cmpAge = competitionAge.objects.create(AgeGroupClassID = AgeGrpRef[i],competitionID = cmpRef,**validated_data)
+                cmpAge = competitionAge.objects.create(AgeGroupClassID = AgeGrpRef[i],competitionID = cmpRef,**validated_data)
         return cmpAge
 
 class CompetitionAgeOnlySerializer(serializers.ModelSerializer):
@@ -729,8 +943,17 @@ class CompetitionAgeOnlySerializer(serializers.ModelSerializer):
         CmpRef = competition.objects.get(competitionName = Comp_Data['competitionName'],startDate= Comp_Data['startDate'],competitionType=cmpTypeRef)
         cmpAge = ""
         for i in range(0,len(AgeGrpRef)):
-            cmpAge = competitionAge.objects.create(AgeGroupClassID = AgeGrpRef[i],competitionID = CmpRef,**validated_data)
+            if competitionAge.objects.filter(AgeGroupClassID = AgeGrpRef[i],competitionID = CmpRef.competitionID).exists()==False:
+                cmpAge = competitionAge.objects.create(AgeGroupClassID = AgeGrpRef[i],competitionID = CmpRef,**validated_data)
+            else:
+                cmpAge = competitionAge.objects.filter(AgeGroupClassID = AgeGrpRef[i],competitionID = CmpRef.competitionID)
+                t = {"defaultBonusMarks":validated_data.get('defaultBonusMarks')}
+                serializer = UpdateCmpAge(instance=cmpAge[0], data=collections.OrderedDict(t), partial=True)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+                cmpAge = competitionAge.objects.filter(AgeGroupClassID = AgeGrpRef[i],competitionID = CmpRef.competitionID)[0]
         return cmpAge
+
 
 class studentCmpAge(serializers.ModelSerializer):
     AgeGroupClassID = AgeGrpClassSerializer()
@@ -740,6 +963,16 @@ class studentCmpAge(serializers.ModelSerializer):
         model = competitionAge
         fields = ('competitionAgeID','AgeGroupClassID','competitionID','defaultBonusMarks')
 
+class UpdateCmpAge(serializers.ModelSerializer):
+
+    class Meta:
+        model = competitionAge
+        fields = ('defaultBonusMarks',)
+
+    def update(self, instance, validated_data):
+        instance.defaultBonusMarks = validated_data.get('defaultBonusMarks',instance.defaultBonusMarks)
+        instance.save()
+        return instance
 
 class CompetitionQuestionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -791,6 +1024,8 @@ class studentEnrollmentSerializer(serializers.ModelSerializer):
     class Meta:
         model= studentEnrollment
         fields =('studentEnrollmentID','timeTaken','score','additionalTime','languageCodeID','competitionAgeID','schoolClassID','userID','bonusMarks')
+
+
 
 
 #user portal
