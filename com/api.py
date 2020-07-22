@@ -22,7 +22,7 @@ class CountryNameAPI(APIView):
         countries = Countries.objects.all().values_list('nicename', flat=True)
         countries=list(countries)
         countries.sort()
-        return JsonResponse({"countries":list(countries)},safe=True)
+        return JsonResponse({"countries":list(countries)},safe=False)
       except Exception as e:
         return HttpResponse(e,status=404)
   # Get All School Names API
