@@ -499,15 +499,16 @@ class getCompetitionsNamesForAnalysisAPI(generics.GenericAPIView):
         role_of_user=UserRole.objects.get(userID=request.user.userID)
         location_of_user=UserRoleLocation.objects.get(userRoleID=role_of_user)
         schoolname=school.objects.get(schoolID=location_of_user.locationObjectID)
-        comp=competition.objects.all()
+        mainChallenge=code.objects.get(codeID=main_challenge)
+        comp=competition.objects.filter(competitionType=mainChallenge)
         for data in comp:
-        
-           if data.endDate.date() > schoolname.registered_On and data.competitionType.codeID==main_challenge :
-               cmpNames.append(data.competitionName)
-               print(cmpNames)
-           else:
-               print("Not appeared for ",data.competitionName)
-        
+          if data.endDate.replace(tzinfo=None) < datetime.now()-timedelta(seconds=20):
+            if data.endDate > schoolname.registered_On:
+                cmpNames.append(data.competitionName)
+                print(cmpNames)
+            else:
+                print("Not appeared for ",data.competitionName)
+        # cmpNames.reverse()
         if len(cmpNames)==0:
           return Response("Sorry your school hasn't appeared for any competitions",status=404)
         return  JsonResponse({"competitionnames":cmpNames}, safe=False)
@@ -1254,170 +1255,6 @@ class GetStudentsAgeGroupWise(APIView):
         return Response(serializers.data)
 
 
-@parser_classes((MultiPartParser,))
-class CustomizePPT(APIView):
-    def ppt(self,f,data,school,type,duplicate):
-        prs = Presentation(f)
-        NamesOfParticipants = []
-        NOP = []
-        text_runs = []
-        def duplicate_slide(pres, index):
-            template = pres.slides[index]
-            try:
-                blank_slide_layout = pres.slide_layouts[6]
-            except:
-                blank_slide_layout = pres.slide_layouts[len(pres.slide_layouts) - 1]
-            copied_slide = pres.slides.add_slide(blank_slide_layout)
-            for shp in template.shapes:
-                el = shp.element
-                newel = copy.deepcopy(el)
-                copied_slide.shapes._spTree.insert_element_before(newel, 'p:extLst')
-            for _, value in six.iteritems(template.part.rels):
-                if "notesSlide" not in value.reltype:
-                    copied_slide.part.rels.add_relationship(value.reltype,
-                                                            value._target,
-                                                            value.rId)
-            return copied_slide
-        if duplicate==True:
-            for i in range(0,len(data)-1):
-                duplicate_slide(prs, 0)
-        i = -1
-        print("Count",len(prs.slides))
-        for slide in prs.slides:
-            if i < (len(data) - 1):
-                i = i + 1
-                for shape in slide.shapes:
-                    if shape.has_text_frame:
-                        for paragraph in shape.text_frame.paragraphs:
-                            for run in paragraph.runs:
-                                if (shape.text.find('Name')) != -1:
-                                    cur_text = run.text
-                                    nameofPDF=data[i]['Name']+'-'+data[i]['loginID']+'-'+str(data[i]['year'])
-                                    NamesOfParticipants.append(nameofPDF)
-                                    new_text = cur_text.replace(str('Name'), str(data[i]['Name']))
-                                    run.text = new_text
-                                if (shape.text.find('year')) != -1:
-                                    cur_text = run.text
-                                    new_text = cur_text.replace(str('year'), str(data[i]['year']))
-                                    run.text = new_text
-                                if (shape.text.find('class')) != -1:
-                                    cur_text = run.text
-                                    new_text = cur_text.replace(str('class'), str(data[i]['class']))
-                                    run.text = new_text
-                                if (shape.text.find('group')) != -1:
-                                    cur_text = run.text
-                                    new_text = cur_text.replace(str('group'), str(data[i]['group']))
-                                    run.text = new_text
-                                if (shape.text.find('score')) != -1:
-                                    cur_text = run.text
-                                    new_text = cur_text.replace(str('score'), str(data[i]['score']))
-                                    run.text = new_text
-                                if (shape.text.find('total')) != -1:
-                                    cur_text = run.text
-                                    new_text = cur_text.replace(str('total'), str(data[i]['total']))
-                                    run.text = new_text
-                                if (shape.text.find('[')) != -1:
-                                    cur_text = run.text
-                                    new_text = cur_text.replace(str('['), str(''))
-                                    run.text = new_text
-                                if (shape.text.find(']')) != -1:
-                                    cur_text = run.text
-                                    new_text = cur_text.replace(str(']'), str(''))
-                                    run.text = new_text
-            else:
-                rId = prs.slides._sldIdLst[-1].rId
-                prs.part.drop_rel(rId)
-                del prs.slides._sldIdLst[-1]
-        if(type=='participation'):
-          NOP = NamesOfParticipants[::2]
-        elif(type=='schoolToppers'):
-          NOP = NamesOfParticipants
-        path=''
-        ldir = os.path.join(settings.MEDIA_ROOT) + '/output//'
-        if(len(ldir)!=0):
-          shutil.rmtree(ldir)
-          os.makedirs(os.path.join(settings.MEDIA_ROOT) +'/output//')
-        if(type=='participation'):
-            path=os.path.join(settings.MEDIA_ROOT) + '/output//'+school+'-Class-'+data[0]['class']+'-'+data[0]['group']+'-'+str(data[0]['year'])+'.pptx'
-        elif(type=='schoolToppers'):
-            path=os.path.join(settings.MEDIA_ROOT) + '/output//' + school + '-Toppers-' + data[0][ 'group'] + '-' +str(data[0]['year'])+'.pptx'
-        elif (type == 'nationalToppers'):
-            path = os.path.join(settings.MEDIA_ROOT) + '/output//' +  'National Toppers-' + data[0]['group'] + '-' + data[0]['year'] + '.pptx'
-        prs.save(path)
-        # pythoncom.CoInitialize()
-        def zipdir(self,source):
-            print("Entered zipdir")
-            pdfName=''
-            if(type=='participation'):
-                pdfName=school+'-Class-'+data[0]['class']+'-'+data[0]['group']+'-'+str(data[0]['year'])
-            elif(type=='schoolToppers'):
-                pdfName=school + '-Toppers-' + data[0][ 'group'] + '-' +str(data[0]['year'])
-            basedir = pdfName
-            baseName = os.path.join(settings.MEDIA_ROOT) + '/ZipFolder/BebrasCertificate'
-            shutil.make_archive(base_dir=basedir,root_dir=source,format='zip',base_name=baseName)
-            shutil.rmtree(os.path.join(settings.MEDIA_ROOT) + '/ZipFolder//'+pdfName)
-            print("Done!")
-        def splitPDF(self,path1):
-            pdfName=''
-            if(type=='participation'):
-                pdfName=school+'-Class-'+data[0]['class']+'-'+data[0]['group']+'-'+str(data[0]['year'])
-                CertiFolder = os.path.join(settings.MEDIA_ROOT)+'/ZipFolder//'+pdfName
-                os.makedirs(CertiFolder)
-            elif(type=='schoolToppers'):
-                pdfName=school + '-Toppers-' + data[0][ 'group'] + '-' +str(data[0]['year'])
-                CertiFolder = os.path.join(settings.MEDIA_ROOT)+'/ZipFolder//'+pdfName
-                os.makedirs(CertiFolder)
-            pdfFileObj = open(path1, "rb")
-            inputpdf = PdfFileReader(pdfFileObj)
-            i=0
-            print(inputpdf.numPages)
-            if(inputpdf.numPages==1):
-                output = PdfFileWriter()
-                output.addPage(inputpdf.getPage(i))
-                outputFileName = os.path.join((settings.MEDIA_ROOT)+'/ZipFolder//'+pdfName,NOP[0]+".pdf" )
-                with open(outputFileName, "wb") as outputStream:
-                  output.write(outputStream)
-            else:
-                for i in range(inputpdf.numPages):
-                    output = PdfFileWriter()
-                    output.addPage(inputpdf.getPage(i))
-                    outputFileName = os.path.join((settings.MEDIA_ROOT)+'/ZipFolder//'+pdfName,NOP[i]+".pdf")
-                    with open(outputFileName, "wb") as outputStream:
-                      output.write(outputStream)
-            pdfFileObj.close()
-        # def convert(files, formatType=32):
-        #     powerpoint = win32com.client.Dispatch("Powerpoint.Application")
-        #     powerpoint.Visible = 1
-        #     print("ppt",powerpoint)
-        #     for filename in files:
-        #         newname = os.path.splitext(filename)[0] + ".pdf"
-        #         print(filename)
-        #         deck = powerpoint.Presentations.Open(filename,WithWindow=False)
-        #         deck.SaveAs(newname, formatType)
-        #         deck.Close()
-        #     powerpoint.Quit()
-        files = glob.glob(path)  # <--- ONLY CHANGE
-        # convert(files)
-        for filename in files:
-                # command="libreoffice --headless --invisible --convert-to pdf '" + filename +"'"
-                command = "unoconv -f pdf '" + filename+"'"
-                os.system(command)
-                os.remove(path)
-        ldir =(os.path.join(settings.MEDIA_ROOT) + '/ZipFolder//')
-        if(len(ldir)!=0):
-          shutil.rmtree(ldir)
-          os.makedirs(os.path.join(settings.MEDIA_ROOT) +'/ZipFolder//')
-        path1=''
-        if(type=='participation'):
-            path1=os.path.join(settings.MEDIA_ROOT) + '/output//'+school+'-Class-'+data[0]['class']+'-'+data[0]['group']+'-'+str(data[0]['year'])+'.pdf'
-        elif(type=='schoolToppers'):
-            path1=os.path.join(settings.MEDIA_ROOT) + '/output//' + school + '-Toppers-' + data[0][ 'group'] + '-' +str(data[0]['year'])+'.pdf'
-        print(path1,path)
-        splitPDF(self,path1)
-        source= os.path.join(settings.MEDIA_ROOT) + '/ZipFolder//'
-        zipdir(self,source)
-        
-
 # @parser_classes((MultiPartParser,))
 # class CustomizePPT(APIView):
 #     def ppt(self,f,data,school,type,duplicate):
@@ -1454,55 +1291,37 @@ class CustomizePPT(APIView):
 #                     if shape.has_text_frame:
 #                         for paragraph in shape.text_frame.paragraphs:
 #                             for run in paragraph.runs:
-#                               if (shape.text.lower().find('name')) != -1:
-#                                   if(run.text.lower().find('name')!=-1):
-#                                     start=run.text.lower().find('name')
-#                                     end=run.text.lower().find('name')+len('name')
+#                                 if (shape.text.find('Name')) != -1:
+#                                     cur_text = run.text
 #                                     nameofPDF=data[i]['Name']+'-'+data[i]['loginID']+'-'+str(data[i]['year'])
 #                                     NamesOfParticipants.append(nameofPDF)
-#                                     cur_text = run.text
-#                                     new_text = cur_text.replace(run.text[start:end], str(data[i]['Name']))
+#                                     new_text = cur_text.replace(str('Name'), str(data[i]['Name']))
 #                                     run.text = new_text
-#                               if (shape.text.lower().find('year')) != -1:
-#                                   if (run.text.lower().find('year') != -1):
-#                                     start = run.text.lower().find('year')
-#                                     end = run.text.lower().find('year') + len('year')
+#                                 if (shape.text.find('year')) != -1:
 #                                     cur_text = run.text
-#                                     new_text = cur_text.replace(run.text[start:end], str(data[i]['year']))
+#                                     new_text = cur_text.replace(str('year'), str(data[i]['year']))
 #                                     run.text = new_text
-#                               if (shape.text.lower().find('class')) != -1:
-#                                   if (run.text.lower().find('class') != -1):
-#                                     start = run.text.lower().find('class')
-#                                     end = run.text.lower().find('class') + len('class')
+#                                 if (shape.text.find('class')) != -1:
 #                                     cur_text = run.text
-#                                     new_text = cur_text.replace(run.text[start:end], str(data[i]['class']))
+#                                     new_text = cur_text.replace(str('class'), str(data[i]['class']))
 #                                     run.text = new_text
-#                               if (shape.text.lower().find('group')) != -1:
-#                                   if (run.text.lower().find('group') != -1):
-#                                     start = run.text.lower().find('group')
-#                                     end = run.text.lower().find('group') + len('group')
+#                                 if (shape.text.find('group')) != -1:
 #                                     cur_text = run.text
-#                                     new_text = cur_text.replace(run.text[start:end], str(data[i]['group']))
+#                                     new_text = cur_text.replace(str('group'), str(data[i]['group']))
 #                                     run.text = new_text
-#                               if (shape.text.lower().find('score')) != -1:
-#                                   if (run.text.lower().find('score') != -1):
-#                                     start = run.text.lower().find('score')
-#                                     end = run.text.lower().find('score') + len('score')
+#                                 if (shape.text.find('score')) != -1:
 #                                     cur_text = run.text
-#                                     new_text = cur_text.replace(run.text[start:end], str(data[i]['score']))
+#                                     new_text = cur_text.replace(str('score'), str(data[i]['score']))
 #                                     run.text = new_text
-#                               if (shape.text.lower().find('total')) != -1:
-#                                   if (run.text.lower().find('total') != -1):
-#                                     start = run.text.lower().find('total')
-#                                     end = run.text.lower().find('total') + len('total')
+#                                 if (shape.text.find('total')) != -1:
 #                                     cur_text = run.text
-#                                     new_text = cur_text.replace(run.text[start:end], str(data[i]['total']))
-#                                     run.text = new_text  
-#                               if (shape.text.find('[')) != -1:
+#                                     new_text = cur_text.replace(str('total'), str(data[i]['total']))
+#                                     run.text = new_text
+#                                 if (shape.text.find('[')) != -1:
 #                                     cur_text = run.text
 #                                     new_text = cur_text.replace(str('['), str(''))
 #                                     run.text = new_text
-#                               if (shape.text.find(']')) != -1:
+#                                 if (shape.text.find(']')) != -1:
 #                                     cur_text = run.text
 #                                     new_text = cur_text.replace(str(']'), str(''))
 #                                     run.text = new_text
@@ -1598,6 +1417,189 @@ class CustomizePPT(APIView):
 #         splitPDF(self,path1)
 #         source= os.path.join(settings.MEDIA_ROOT) + '/ZipFolder//'
 #         zipdir(self,source)
+        
+
+@parser_classes((MultiPartParser,))
+class CustomizePPT(APIView):
+    def ppt(self,f,data,school,type,duplicate):
+        prs = Presentation(f)
+        NamesOfParticipants = []
+        NOP = []
+        text_runs = []
+        def duplicate_slide(pres, index):
+            template = pres.slides[index]
+            try:
+                blank_slide_layout = pres.slide_layouts[6]
+            except:
+                blank_slide_layout = pres.slide_layouts[len(pres.slide_layouts) - 1]
+            copied_slide = pres.slides.add_slide(blank_slide_layout)
+            for shp in template.shapes:
+                el = shp.element
+                newel = copy.deepcopy(el)
+                copied_slide.shapes._spTree.insert_element_before(newel, 'p:extLst')
+            for _, value in six.iteritems(template.part.rels):
+                if "notesSlide" not in value.reltype:
+                    copied_slide.part.rels.add_relationship(value.reltype,
+                                                            value._target,
+                                                            value.rId)
+            return copied_slide
+        if duplicate==True:
+            for i in range(0,len(data)-1):
+                duplicate_slide(prs, 0)
+        i = -1
+        print("Count",len(prs.slides))
+        for slide in prs.slides:
+            if i < (len(data) - 1):
+                i = i + 1
+                for shape in slide.shapes:
+                    if shape.has_text_frame:
+                        for paragraph in shape.text_frame.paragraphs:
+                            for run in paragraph.runs:
+                              if (shape.text.lower().find('name')) != -1:
+                                  if(run.text.lower().find('name')!=-1):
+                                    start=run.text.lower().find('name')
+                                    end=run.text.lower().find('name')+len('name')
+                                    nameofPDF=data[i]['Name']+'-'+data[i]['loginID']+'-'+str(data[i]['year'])
+                                    NamesOfParticipants.append(nameofPDF)
+                                    cur_text = run.text
+                                    new_text = cur_text.replace(run.text[start:end], str(data[i]['Name']))
+                                    run.text = new_text
+                              if (shape.text.lower().find('year')) != -1:
+                                  if (run.text.lower().find('year') != -1):
+                                    start = run.text.lower().find('year')
+                                    end = run.text.lower().find('year') + len('year')
+                                    cur_text = run.text
+                                    new_text = cur_text.replace(run.text[start:end], str(data[i]['year']))
+                                    run.text = new_text
+                              if (shape.text.lower().find('class')) != -1:
+                                  if (run.text.lower().find('class') != -1):
+                                    start = run.text.lower().find('class')
+                                    end = run.text.lower().find('class') + len('class')
+                                    cur_text = run.text
+                                    new_text = cur_text.replace(run.text[start:end], str(data[i]['class']))
+                                    run.text = new_text
+                              if (shape.text.lower().find('group')) != -1:
+                                  if (run.text.lower().find('group') != -1):
+                                    start = run.text.lower().find('group')
+                                    end = run.text.lower().find('group') + len('group')
+                                    cur_text = run.text
+                                    new_text = cur_text.replace(run.text[start:end], str(data[i]['group']))
+                                    run.text = new_text
+                              if (shape.text.lower().find('score')) != -1:
+                                  if (run.text.lower().find('score') != -1):
+                                    start = run.text.lower().find('score')
+                                    end = run.text.lower().find('score') + len('score')
+                                    cur_text = run.text
+                                    new_text = cur_text.replace(run.text[start:end], str(data[i]['score']))
+                                    run.text = new_text
+                              if (shape.text.lower().find('total')) != -1:
+                                  if (run.text.lower().find('total') != -1):
+                                    start = run.text.lower().find('total')
+                                    end = run.text.lower().find('total') + len('total')
+                                    cur_text = run.text
+                                    new_text = cur_text.replace(run.text[start:end], str(data[i]['total']))
+                                    run.text = new_text  
+                              if (shape.text.find('[')) != -1:
+                                    cur_text = run.text
+                                    new_text = cur_text.replace(str('['), str(''))
+                                    run.text = new_text
+                              if (shape.text.find(']')) != -1:
+                                    cur_text = run.text
+                                    new_text = cur_text.replace(str(']'), str(''))
+                                    run.text = new_text
+            else:
+                rId = prs.slides._sldIdLst[-1].rId
+                prs.part.drop_rel(rId)
+                del prs.slides._sldIdLst[-1]
+        if(type=='participation'):
+          # NOP = NamesOfParticipants[::2]
+          cNOP =  list(dict.fromkeys(NamesOfParticipants))
+        elif(type=='schoolToppers'):
+          NOP = NamesOfParticipants
+        path=''
+        ldir = os.path.join(settings.MEDIA_ROOT) + '/output//'
+        if(len(ldir)!=0):
+          shutil.rmtree(ldir)
+          os.makedirs(os.path.join(settings.MEDIA_ROOT) +'/output//')
+        if(type=='participation'):
+            path=os.path.join(settings.MEDIA_ROOT) + '/output//'+school+'-Class-'+data[0]['class']+'-'+data[0]['group']+'-'+str(data[0]['year'])+'.pptx'
+        elif(type=='schoolToppers'):
+            path=os.path.join(settings.MEDIA_ROOT) + '/output//' + school + '-Toppers-' + data[0][ 'group'] + '-' +str(data[0]['year'])+'.pptx'
+        elif (type == 'nationalToppers'):
+            path = os.path.join(settings.MEDIA_ROOT) + '/output//' +  'National Toppers-' + data[0]['group'] + '-' + data[0]['year'] + '.pptx'
+        prs.save(path)
+        # pythoncom.CoInitialize()
+        def zipdir(self,source):
+            print("Entered zipdir")
+            pdfName=''
+            if(type=='participation'):
+                pdfName=school+'-Class-'+data[0]['class']+'-'+data[0]['group']+'-'+str(data[0]['year'])
+            elif(type=='schoolToppers'):
+                pdfName=school + '-Toppers-' + data[0][ 'group'] + '-' +str(data[0]['year'])
+            basedir = pdfName
+            baseName = os.path.join(settings.MEDIA_ROOT) + '/ZipFolder/BebrasCertificate'
+            shutil.make_archive(base_dir=basedir,root_dir=source,format='zip',base_name=baseName)
+            shutil.rmtree(os.path.join(settings.MEDIA_ROOT) + '/ZipFolder//'+pdfName)
+            print("Done!")
+        def splitPDF(self,path1):
+            pdfName=''
+            if(type=='participation'):
+                pdfName=school+'-Class-'+data[0]['class']+'-'+data[0]['group']+'-'+str(data[0]['year'])
+                CertiFolder = os.path.join(settings.MEDIA_ROOT)+'/ZipFolder//'+pdfName
+                os.makedirs(CertiFolder)
+            elif(type=='schoolToppers'):
+                pdfName=school + '-Toppers-' + data[0][ 'group'] + '-' +str(data[0]['year'])
+                CertiFolder = os.path.join(settings.MEDIA_ROOT)+'/ZipFolder//'+pdfName
+                os.makedirs(CertiFolder)
+            pdfFileObj = open(path1, "rb")
+            inputpdf = PdfFileReader(pdfFileObj)
+            i=0
+            print(inputpdf.numPages)
+            if(inputpdf.numPages==1):
+                output = PdfFileWriter()
+                output.addPage(inputpdf.getPage(i))
+                outputFileName = os.path.join((settings.MEDIA_ROOT)+'/ZipFolder//'+pdfName,NOP[0]+".pdf" )
+                with open(outputFileName, "wb") as outputStream:
+                  output.write(outputStream)
+            else:
+                for i in range(inputpdf.numPages):
+                    output = PdfFileWriter()
+                    output.addPage(inputpdf.getPage(i))
+                    outputFileName = os.path.join((settings.MEDIA_ROOT)+'/ZipFolder//'+pdfName,NOP[i]+".pdf")
+                    with open(outputFileName, "wb") as outputStream:
+                      output.write(outputStream)
+            pdfFileObj.close()
+        # def convert(files, formatType=32):
+        #     powerpoint = win32com.client.Dispatch("Powerpoint.Application")
+        #     powerpoint.Visible = 1
+        #     print("ppt",powerpoint)
+        #     for filename in files:
+        #         newname = os.path.splitext(filename)[0] + ".pdf"
+        #         print(filename)
+        #         deck = powerpoint.Presentations.Open(filename,WithWindow=False)
+        #         deck.SaveAs(newname, formatType)
+        #         deck.Close()
+        #     powerpoint.Quit()
+        files = glob.glob(path)  # <--- ONLY CHANGE
+        # convert(files)
+        for filename in files:
+                # command="libreoffice --headless --invisible --convert-to pdf '" + filename +"'"
+                command = "unoconv -f pdf '" + filename+"'"
+                os.system(command)
+                os.remove(path)
+        ldir =(os.path.join(settings.MEDIA_ROOT) + '/ZipFolder//')
+        if(len(ldir)!=0):
+          shutil.rmtree(ldir)
+          os.makedirs(os.path.join(settings.MEDIA_ROOT) +'/ZipFolder//')
+        path1=''
+        if(type=='participation'):
+            path1=os.path.join(settings.MEDIA_ROOT) + '/output//'+school+'-Class-'+data[0]['class']+'-'+data[0]['group']+'-'+str(data[0]['year'])+'.pdf'
+        elif(type=='schoolToppers'):
+            path1=os.path.join(settings.MEDIA_ROOT) + '/output//' + school + '-Toppers-' + data[0][ 'group'] + '-' +str(data[0]['year'])+'.pdf'
+        print(path1,path)
+        splitPDF(self,path1)
+        source= os.path.join(settings.MEDIA_ROOT) + '/ZipFolder//'
+        zipdir(self,source)
         
 
 class deleteFiles(APIView):
