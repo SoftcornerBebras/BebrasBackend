@@ -79,7 +79,7 @@ class UserInsertUpdateSerializer(serializers.ModelSerializer):
         instance.gender = validated_data.get('gender',instance.gender)
         instance.phone = validated_data.get('phone',instance.phone)
         instance.modified_by =validated_data.get('username',instance.username)
-        instance.modified_on = datetime.now().date()
+        instance.modified_on = datetime.now()
         instance.save()
         return instance
 
@@ -112,7 +112,7 @@ class UserRoleInsertUpdateSerializer(serializers.ModelSerializer):
         User_data['gender'] = genderID
         x = User(**User_data)
         x.created_on = datetime.now()
-        x.modified_on = datetime.now().date()
+        x.modified_on = datetime.now()
         x.save()
         user = UserRole.objects.create(userID=x,RoleID = roleID, **validated_data)
         return user
@@ -127,7 +127,7 @@ class UserRoleInsertUpdateSerializer(serializers.ModelSerializer):
         user.birthdate = User_data.get('birthdate',user.birthdate)
         user.email = User_data.get('email',user.email)
         user.phone = User_data.get('phone',user.phone)
-        user.modified_on = datetime.now().date()
+        user.modified_on = datetime.now()
         user.modified_by = User_data.get('modified_by',user.modified_by)
         gender = code.objects.get(codeName=User_data['gender']['codeName'])
         User_data['gender'] = gender
@@ -145,8 +145,6 @@ class UserRoleInsertUpdateSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
-
-
 class PasswordResetSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -156,6 +154,7 @@ class PasswordResetSerializer(serializers.ModelSerializer):
         instance.password = validated_data.get('password', instance.password)
         password = encrypt(instance.password)
         instance.password = password
+        instance.modified_on = datetime.now()
         instance.save()
         return instance
 
@@ -171,7 +170,6 @@ class UserRoleLocationSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserRoleLocation
         fields = ('userRoleLocationID', 'userRoleID','locationTypeCodeID','locationObjectID')
-
 
 
 #user portal
