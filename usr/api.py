@@ -73,7 +73,7 @@ class LoginAPI(generics.GenericAPIView):
               errors=errors+ i +' '+ str(serializer.errors[i])
               errors="Error : "+errors
           raise_exception=True
-          return JsonResponse(errors, status=400)
+          return JsonResponse(errors,safe=False, status=400)
       except Exception as e:
         return HttpResponse(e,status=500)
 class TeacherRegisterAPI(generics.GenericAPIView):
@@ -91,6 +91,8 @@ class TeacherRegisterAPI(generics.GenericAPIView):
         request.data['gender']=Code.codeID
         request.data['email']=request.data['email'].strip()
         request.data['loginID']=request.data['email']
+        if not SchoolRegisterAPI.validate_international_phonenumber(request.data['phone']) :
+            return Response( "The phone number entered in Teacher Details is not valid.",status=400)
         del request.data['school']
         print(request.data)
         serializer = RegisterSerializer(data=request.data)
@@ -136,7 +138,7 @@ class TeacherRegisterAPI(generics.GenericAPIView):
               errors=errors+ i +' '+ str(serializer.errors[i])
               errors="Error : "+errors
 
-          return JsonResponse(errors  ,status=400)
+          return JsonResponse(errors  ,safe=False, status=400)
       except Exception as e:
         return HttpResponse(e,status=404)
 class StudentBulkCompetitionRegisterAPI(generics.GenericAPIView):
@@ -274,7 +276,7 @@ class StudentRegisterAPI(generics.GenericAPIView):
               errors=errors+ i +' '+ str(serializer.errors[i])
               errors="Error : "+errors
           raise_exception=True
-          return JsonResponse(errors, status=400)
+          return JsonResponse(errors, safe=False,status=400)
       except Exception as e:
         return HttpResponse(e,status=500)
 
@@ -471,7 +473,7 @@ class SchoolRegisterAPI(generics.GenericAPIView):
         schooldata['phone']=schooldata['contact']
         del schooldata['contact']
         if not SchoolRegisterAPI.validate_international_phonenumber(schooldata['phone']) :
-            return Response( "The phone number entered is not valid.",status=400)
+            return Response( "The phone number entered in School Details is not valid.",status=400)
 
         if schooldata['UDISEcode']!='' and len(schooldata['UDISEcode'])!=11:
           return Response("Udisecode should be eleven digits",status=404)
@@ -495,48 +497,90 @@ class SchoolRegisterAPI(generics.GenericAPIView):
         addressdata['countryID']=country.countryID
         print("address",addressdata)
         serializer = AddAddressSerializer(data=addressdata)
-        if serializer.is_valid():
-          address = serializer.save()
+        if Address.objects.filter(line1=addressdata['line1'],line2=addressdata['line2'],city=addressdata['city']).count() != 0:
+          address=Address.objects.get(line1=addressdata['line1'],line2=addressdata['line2'],city=addressdata['city'])
+          print(address)
           typecode=code.objects.get(codeName=schooldata['schoolType'],codeGroupID=schooltype)
-          print("address saved")
           schooldata['schoolTypeCodeID']=typecode.codeID
           typecode=code.objects.get(codeName=schooldata['schoolGroupID'],codeGroupID=schoolGroupID)
           schooldata['schoolGroupID']=typecode.codeID
           schooldata['addressID']=address.addressID
           del schooldata['schoolType']
-          serializer = AddSchoolSerializer(data=schooldata)
-          if serializer.is_valid():
-            school1 = serializer.save()
-            print("school saved")
-            for i in cl:
-              schoolclassdata1["schoolID"]=school1.schoolID
-              schoolclassdata1["classNumber"]=i
-              serializer = AddschoolClassSerializer(data=schoolclassdata1)
-              if serializer.is_valid():
-                classes = serializer.save()
-                print("school class saved")
-            return Response({
-            "address": AddAddressSerializer(address, context=self.get_serializer_context()).data,
-            "school":school1.schoolID,
-            "classes":AddschoolClassSerializer(classes, context=self.get_serializer_context()).data,
-              })
+          if school.objects.filter(schoolName=schooldata['schoolName'],addressID=schooldata['addressID'],UDISEcode=schooldata['UDISEcode']).count() != 0:
+             school1=school.objects.get(schoolName=schooldata['schoolName'],addressID=schooldata['addressID'],UDISEcode=schooldata['UDISEcode'])
+             print(school1)
+             return Response({
+              "address": AddAddressSerializer(address, context=self.get_serializer_context()).data,
+              "school":school1.schoolID,
+                })
           else:
+            serializer = AddSchoolSerializer(data=schooldata)
+            if serializer.is_valid():
+              school1 = serializer.save()
+              print("school saved")
+              for i in cl:
+                schoolclassdata1["schoolID"]=school1.schoolID
+                schoolclassdata1["classNumber"]=i
+                serializer = AddschoolClassSerializer(data=schoolclassdata1)
+                if serializer.is_valid():
+                  classes = serializer.save()
+                  print("school class saved")
+              return Response({
+              "address": AddAddressSerializer(address, context=self.get_serializer_context()).data,
+              "school":school1.schoolID,
+              "classes":AddschoolClassSerializer(classes, context=self.get_serializer_context()).data,
+                })
+            else:
+              errors=''
+              for i in serializer.errors :
+                errors=errors+ i +' '+ str(serializer.errors[i])
+                errors="Error : "+errors
+              raise_exception=True
+              return JsonResponse(errors, safe=False,status=400)
+          return Response("address already registered",status=404)
+        else:
+          if serializer.is_valid():
+            address = serializer.save()
+            typecode=code.objects.get(codeName=schooldata['schoolType'],codeGroupID=schooltype)
+            print("address saved")
+            schooldata['schoolTypeCodeID']=typecode.codeID
+            typecode=code.objects.get(codeName=schooldata['schoolGroupID'],codeGroupID=schoolGroupID)
+            schooldata['schoolGroupID']=typecode.codeID
+            schooldata['addressID']=address.addressID
+            del schooldata['schoolType']
+            serializer = AddSchoolSerializer(data=schooldata)
+            if serializer.is_valid():
+              school1 = serializer.save()
+              print("school saved")
+              for i in cl:
+                schoolclassdata1["schoolID"]=school1.schoolID
+                schoolclassdata1["classNumber"]=i
+                serializer = AddschoolClassSerializer(data=schoolclassdata1)
+                if serializer.is_valid():
+                  classes = serializer.save()
+                  print("school class saved")
+              return Response({
+              "address": AddAddressSerializer(address, context=self.get_serializer_context()).data,
+              "school":school1.schoolID,
+              "classes":AddschoolClassSerializer(classes, context=self.get_serializer_context()).data,
+                })
+            else:
+              errors=''
+              for i in serializer.errors :
+                errors=errors+ i +' '+ str(serializer.errors[i])
+                errors="Error : "+errors
+              raise_exception=True
+              return JsonResponse(errors, safe=False,status=400)
+          else:
+            raise_exception=True
             errors=''
             for i in serializer.errors :
-              errors=errors+ i +' '+ str(serializer.errors[i])
-              errors="Error : "+errors
-            raise_exception=True
-            return JsonResponse(errors, status=400)
-        else:
-          raise_exception=True
-          errors=''
-          for i in serializer.errors :
-              errors=errors+ i +' '+ str(serializer.errors[i])
-              errors="Error : "+errors
-          return JsonResponse(errors, status=400)
+                errors=errors+ i +' '+ str(serializer.errors[i])
+                errors="Error : "+errors
+            return JsonResponse(errors, safe=False,status=400)
       except Exception as exc:
         print(exc)
-        return JsonResponse( exc ,status=400)
+        return JsonResponse( exc ,safe=False, status=400)
 class UserExcelAPI(APIView):
     permission_classes = [permissions.IsAuthenticated, ]
     serializer_class = StudentSerializer
@@ -633,7 +677,7 @@ class ResetPasswordView(APIView):
             print(userrole)
             if userrole.RoleID.RoleID==TeacherRoleID:
                 self.reset_password(associated_users, request)
-                return JsonResponse({"uidb64":c['uid'],"token":c['token'],"response":"Email sent to the registered email id"})
+                return JsonResponse({"uidb64":c['uid'],"token":c['token'],"response":"Email sent to the registered email id"},safe=False)
                 return Response("Email sent to the registered email id")
             else:
                 return Response("Please contact your respective teacher for login credentials",status=404)
