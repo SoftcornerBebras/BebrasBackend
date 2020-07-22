@@ -45,7 +45,14 @@ class GetImages(serializers.ModelSerializer):
 
     class Meta:
         model = Image
-        fields = ('ImageID','uploadedFile','ObjectID')
+        fields = ('ImageID','uploadedFile','ObjectID','ImageName')
+
+    def update(self, instance, validated_data):
+        instance.ImageName = validated_data.get('ImageName',instance.ImageName)
+        instance.ObjectID = validated_data.get('ObjectID',instance.ObjectID)
+        instance.uploadedFile = validated_data.get('uploadedFile',instance.uploadedFile)
+        instance.save()
+        return instance
 
 class GetTranslatedOptions(serializers.ModelSerializer):
 
