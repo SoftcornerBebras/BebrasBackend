@@ -1513,7 +1513,7 @@ class CustomizePPT(APIView):
                 del prs.slides._sldIdLst[-1]
         if(type=='participation'):
           # NOP = NamesOfParticipants[::2]
-          cNOP =  list(dict.fromkeys(NamesOfParticipants))
+          NOP =  list(dict.fromkeys(NamesOfParticipants))
         elif(type=='schoolToppers'):
           NOP = NamesOfParticipants
         path=''
