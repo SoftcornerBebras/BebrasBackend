@@ -12,6 +12,8 @@ from datetime import *
 import json
 import collections
 from BebrasBackend.constants import *
+import os
+from django.conf import settings
 
 class InsertMcqQuesSerializer(serializers.ModelSerializer):
     questionTranslationID = GetTranslatedQuestion()
