@@ -21,7 +21,7 @@ class questionTranslation(models.Model):
     questionID=models.ForeignKey(question,db_column='questionID',to_field='questionID',on_delete=models.CASCADE)
     languageCodeID=models.ForeignKey(code,db_column='languageCodeID',to_field='codeID',on_delete=models.CASCADE)
     translation=jsonfield.JSONField()
-    modified_on = models.DateTimeField()
+    modified_on = models.DateTimeField(auto_now_add=True)
     modified_by = models.CharField(max_length=50, default='default value')
     Identifier = models.CharField(max_length=50)
 
