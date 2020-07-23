@@ -16,7 +16,7 @@ class competition(models.Model):
 class AgeGroup(models.Model):
     AgeGroupID = models.AutoField(db_column='AgeGroupID', primary_key=True)
     AgeGroupName = models.CharField(db_column='AgeGroupName',max_length=30)
-    created_on = models.DateTimeField(auto_now_add=True)
+    created_on = models.DateTimeField()
 
 class AgeGroupClass(models.Model):
     AgeGroupClassID = models.AutoField(db_column='AgeGroupClassID', primary_key=True)
