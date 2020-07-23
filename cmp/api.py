@@ -804,12 +804,15 @@ class practiceChallengeNames(APIView):
         challengesnames = list(dict.fromkeys(challengesnames))
         agegrp = list(dict.fromkeys(agegrp))
         for i in range(len(agegrp)):
-          print(agegrp[i])
+          print(agegrp[i].AgeGroupName)
           agegrpclass=AgeGroupClass.objects.filter(AgeGroupID=agegrp[i]).values_list('ClassID', flat=True)
           caption=str(list(agegrpclass))
+          print(caption)
           caption=caption.replace('[', '')
           caption=caption.replace(']', '')
-          challengesnames[i]=challengesnames[i]+ " ( Class "+caption +")"
+          index=challengesnames.index(agegrp[i].AgeGroupName)
+          challengesnames[index]=challengesnames[index]+ " ( Class "+caption +")"
+          print(challengesnames[i],challengesnames)
         if len(challengesnames)==0:
           return Response("No Practice Challenge to show ",status=404)    
         return JsonResponse({"PracticeChallenges":challengesnames}, safe=False)
