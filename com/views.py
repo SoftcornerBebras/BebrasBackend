@@ -130,6 +130,7 @@ class UpdateSchoolView(APIView):          #Update School Details API
             serializers.save()
             return Response(serializers.data)
         except Exception as e:
+            print(e)
             return Response(e,status=500)
 
 class GetQuestionTypeView(APIView):           #Get All QuesType API
