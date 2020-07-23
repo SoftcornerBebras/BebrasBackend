@@ -62,6 +62,7 @@ class SchoolSerializers(serializers.ModelSerializer):
     fields = ('schoolID', 'schoolName','schoolTypeCodeID','schoolGroupID','addressID','UDISEcode','tag','phone','registered_By','registered_On','modified_by','modified_on')
 
   def update(self, instance, validated_data):
+    print(validated_data)
     school_TypeCodeID = validated_data.pop('schoolTypeCodeID')
     school_group = validated_data.pop('schoolGroupID')
     addressID = validated_data.pop('addressID')
