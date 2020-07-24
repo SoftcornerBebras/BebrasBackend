@@ -192,14 +192,13 @@ class QuestionSearch(APIView):
 
 class EditPreviousQuestion(APIView):
 
-    def get(self,request):
-
+    def post(self,request):
+        subs = request.data.pop('newIP',None)
+        preval = request.data.pop('oldIP',None)
         for ques in questionTranslation.objects.all():
             string = ques.translation['background']
-            subs = "54.196.61.229"
-            ques.translation['background'] = string.replace('3.84.169.90', subs)
+            ques.translation['background'] = string.replace(preval, subs)
             string1 = ques.translation['explanation']
-            subs = "54.196.61.229"
-            ques.translation['explanation'] = string1.replace('3.84.169.90', subs)
+            ques.translation['explanation'] = string1.replace(preval, subs)
             ques.save()
         return Response(status=200)
