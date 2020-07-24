@@ -40,23 +40,6 @@ import shutil
 
 
 
-class getoptionAPI(generics.GenericAPIView):
-    permission_classes = [
-      permissions.AllowAny,
-    ]
-    def get(self, request):
-      try:
-        my_things = optionTranslation.objects.filter(translationO__contains='"option":"૫"')
-        print(len(my_things))
-        jsonobj={"option":"16A"}
-        options=optionTranslation.objects.filter(translationO={'option': 'A'})
-        print(len(options))
-        opti=optionTranslation.objects.get(translationO=jsonobj)
-        print(opti)
-        opt=OptionTranslationView(opti)
-        return  JsonResponse({"competitionnames":opt.data}, safe=False)
-      except Exception as e:
-        return HttpResponse(e,status=404)
 
 
 class getCompetitionAPI(generics.GenericAPIView):
@@ -69,7 +52,6 @@ class getCompetitionAPI(generics.GenericAPIView):
         totalTime=0.0
         for res in studentresponse:
           totalTime=totalTime+res.time
-        print(totalTime)
         totalTime=totalTime*60
         min, sec = divmod(totalTime, 60)
         hr, min = divmod(min, 60)
@@ -77,7 +59,6 @@ class getCompetitionAPI(generics.GenericAPIView):
         return totalTime
     def get(self, request):
       try:
-        print(request.user.userID)
         cmpNames=[]
         studentenrolled=studentEnrollment.objects.filter(userID=request.user.userID)
         print(studentenrolled)
@@ -87,7 +68,6 @@ class getCompetitionAPI(generics.GenericAPIView):
           endDate=data.competitionAgeID.competitionID.endDate
           startDate=data.competitionAgeID.competitionID.startDate
           if endDate.date() >= datetime.now().date() and datetime.now().date()>=startDate.date():
-            print(data.competitionAgeID.competitionID.competitionName,data.score)
             if data.score!=999:
               attempted=True
             else:
@@ -121,7 +101,6 @@ class getCmpQuestionAPI(generics.GenericAPIView):
         totalTime=0.0
         for res in studentresponse:
           totalTime=totalTime+res.time
-        print(totalTime)
         totalTime=totalTime*60
         min, sec = divmod(totalTime, 60)
         hr, min = divmod(min, 60)
@@ -133,12 +112,10 @@ class getCmpQuestionAPI(generics.GenericAPIView):
         response=[]
         print(request.data['competitionName'])
         compName=competition.objects.get(competitionName=request.data['competitionName'])
-        print(compName)
         studentenrolled=studentEnrollment.objects.filter(userID=request.user.userID).values_list('competitionAgeID', flat=True)
         studentenrolled=list(studentenrolled)
         if len(studentenrolled)==0:
           return Response("Not registered for any competitions ",status=404)
-        print(studentenrolled)
         try:
           cmpage = competitionAge.objects.get(competitionAgeID__in=studentenrolled,competitionID=compName.competitionID)
           print(cmpage)
@@ -151,7 +128,6 @@ class getCmpQuestionAPI(generics.GenericAPIView):
         
         cmpquestion=competitionQuestion.objects.filter(competitionAgeID=cmpage.competitionAgeID).values_list('questionID', flat=True)
         cmpquestion=list(cmpquestion)
-        print((cmpquestion),studentEnrollmentlanguagecode.languageCodeID)
         questiontranslation=questionTranslation.objects.filter(questionID__in=cmpquestion,languageCodeID=studentEnrollmentlanguagecode.languageCodeID)
         print("total number of questions",len(questiontranslation))
         questiondata={}
@@ -165,7 +141,6 @@ class getCmpQuestionAPI(generics.GenericAPIView):
           questiondata['identifier']=quest.Identifier
           question_skills=""
           cs_skills=quest.questionID.cs_skills.split(',')
-          print(cs_skills)
           for skill in cs_skills:
             skill=int(skill)
             codeskills=code.objects.get(codeID=skill)
@@ -176,7 +151,6 @@ class getCmpQuestionAPI(generics.GenericAPIView):
               question_skills=question_skills+" , "+codeskills.codeName
           questiondata['question_cs_skills']=question_skills
           cmpquest=competitionQuestion.objects.get(questionID=quest.questionID , competitionAgeID=cmpage.competitionAgeID)
-          print(cmpquest.questionID,cmpage.AgeGroupClassID.AgeGroupID)
           try:
              studentrespon=studentResponse.objects.get(studentEnrollmentID=studentEnrollmentlanguagecode,competitionQuestionID=cmpquest)
              if studentrespon.ansText==None and studentrespon.optionTranslationID==None:
@@ -203,7 +177,6 @@ class getCmpQuestionAPI(generics.GenericAPIView):
               optiondata=[]
               for optiond in optiontranslation:
                   optionjson={"optionTranslationID":optiond.optionTranslationID,"option":optiond.translationO['option']}
-                  print(optionjson)
                   optiondata.append(optionjson)
               questiondata['options']=optiondata
               response.append(questiondata)
@@ -226,9 +199,7 @@ class getCmpQuestionAPI(generics.GenericAPIView):
               optiondata=[]
               for optiond in optiontranslation:
                   optionjson={"optionTranslationID":optiond.optionTranslationID,"option":optiond.translationO['option']}
-                  print(optionjson)
                   optiondata.append(optionjson)
-                  # optiondata.append(optiond.translationO['option'])
               questiondata['options']=optiondata
               response.append(questiondata)
           else:
@@ -265,7 +236,6 @@ class getAlreadySavedResponse(generics.GenericAPIView):
         print("got question ",quesTranslation)
         student_enrolled=studentEnrollment.objects.get(studentEnrollmentID=request.data['studentEnrollmentID'])
         print(student_enrolled)
-        print(quesTranslation.questionID,student_enrolled.competitionAgeID)
         cmpques=competitionQuestion.objects.get(questionID=quesTranslation.questionID.questionID,competitionAgeID=student_enrolled.competitionAgeID)
         print(cmpques.competitionQuestionID)
         opti=option.objects.filter(questionID=quesTranslation.questionID).values_list('optionID', flat=True)
@@ -282,7 +252,6 @@ class getAlreadySavedResponse(generics.GenericAPIView):
         try:
           #student has already given response
           student_res=studentResponse.objects.get(competitionQuestionID=cmpques.competitionQuestionID,studentEnrollmentID=student_enrolled.studentEnrollmentID)
-          print(student_res)
           if request.data['optionTranslationID']==None:
             print("Ans Text Type")
             if student_res.ansText==None:
@@ -317,7 +286,6 @@ class studentResponseAPI(generics.GenericAPIView):
         print("got question ",quesTranslation)
         student_enrolled=studentEnrollment.objects.get(studentEnrollmentID=request.data['studentEnrollmentID'])
         print(student_enrolled)
-        print(quesTranslation.questionID,student_enrolled.competitionAgeID)
         # assuming only competitionageid and question id will be a unique pair
         cmpques=competitionQuestion.objects.get(questionID=quesTranslation.questionID.questionID,competitionAgeID=student_enrolled.competitionAgeID)
         print(cmpques.competitionQuestionID)
@@ -336,8 +304,6 @@ class studentResponseAPI(generics.GenericAPIView):
               request.data['ansText']=None
             else:
               optiontext['option']=opt
-              # optiontexts='"option":'+'"'+opt+'"'
-              print(optiontext)
               opTranslation=optionTranslation.objects.get(optionTranslationID=opt)
               print(opTranslation)
               request.data['optionTranslationID']=opTranslation.optionTranslationID
@@ -346,9 +312,7 @@ class studentResponseAPI(generics.GenericAPIView):
         startTime=student_enrolled.timeTaken #START TIME refers to student enrollment time taken
         endTime=datetime.now().time()        #END TIME refers to the current time
         time_difference = datetime.combine(date.today(),endTime)-datetime.combine(date.today(),startTime)
-        print(time_difference)
         time_diff=round(time_difference.seconds/60,4)
-        print(time_diff)
         request.data['time']=time_diff
         del request.data['option']
         del request.data['identifier']
@@ -399,7 +363,6 @@ class calcTotalScore(generics.GenericAPIView):
       try:
         print(request.user.userID)
         studentenrolled=studentEnrollment.objects.get(studentEnrollmentID=request.data['studentEnrollmentID'])
-        print(studentenrolled)
         studentenrolled.score=0
         studentenrolled.save()
         studentenrolled=studentEnrollment.objects.get(studentEnrollmentID=request.data['studentEnrollmentID'])
@@ -413,13 +376,11 @@ class calcTotalScore(generics.GenericAPIView):
             if studentresponse.optionTranslationID is not None:
               if correctOpt.optionTranslationID.optionTranslationID == studentresponse.optionTranslationID.optionTranslationID:
                 print("correct")
-                print(competition_Marks.correctMarks)
                 studentenrolled.score=studentenrolled.score+competition_Marks.correctMarks
                 studentenrolled.save()
                 print("Score Saved")
               elif correctOpt.optionTranslationID.optionTranslationID != studentresponse.optionTranslationID.optionTranslationID:
                 print("Incorrect")
-                print(competition_Marks.incorrectMarks)
                 studentenrolled.score=studentenrolled.score+competition_Marks.incorrectMarks
                 studentenrolled.save()
                 print(" Score Saved")
@@ -430,13 +391,11 @@ class calcTotalScore(generics.GenericAPIView):
             if studentresponse.ansText is not None:
               if correctOpt.ansText == studentresponse.ansText:
                 print("correct")
-                print(competition_Marks.correctMarks)
                 studentenrolled.score=studentenrolled.score+competition_Marks.correctMarks
                 studentenrolled.save()
                 print("Score Saved")
               elif correctOpt.ansText != studentresponse.ansText:
                 print("Incorrect")
-                print(competition_Marks.incorrectMarks)
                 studentenrolled.score=studentenrolled.score+competition_Marks.incorrectMarks
                 studentenrolled.save()
                 print(" Score Saved")
@@ -444,7 +403,6 @@ class calcTotalScore(generics.GenericAPIView):
         totalTime=0.0
         for res in studentresponse:
           totalTime=totalTime+res.time
-        print(totalTime)
         totalTime=totalTime*60
         min, sec = divmod(totalTime, 60)
         hr, min = divmod(min, 60)
@@ -469,12 +427,8 @@ class getCompetitionsNamesForResultAPI(generics.GenericAPIView):
           return Response("User hasn't registered for any of the competitions",status=404)
         print(studentenrolled)
         for data in studentenrolled:
-          print(data.competitionAgeID.competitionID.endDate,datetime.now())
           if data.competitionAgeID.competitionID.endDate.replace(tzinfo=None) < datetime.now()-timedelta(seconds=20):
-            # student_response=studentResponse.objects.filter(studentEnrollmentID=data.studentEnrollmentID)
-            # if student_response :
-            #     print(student_response)
-            #     print(data.score)
+         
                 if data.score!=999:
                     cmpNames.append(data.competitionAgeID.competitionID.competitionName)
                     print(cmpNames)
@@ -543,15 +497,12 @@ class getCmpResultsAPI(generics.GenericAPIView):
           print("User hasn't completed the test")
           return Response("User hasn't completed the test",status=404)
         domains=code.objects.filter(codeGroupID=domain)
-        # domains=list(domains)
-       
         for domainnames in domains:
           resultjson={"domain":"","questions":[],"score":0,"marks":0}
           resultjson["domain"]=domainnames.codeName
           score=0
           marks=0
           response=[]
-          print(domainnames.codeName)
           cmpquestion=competitionQuestion.objects.filter(competitionAgeID=cmpage.competitionAgeID).values_list('questionID', flat=True)
           cmpquestion=list(cmpquestion)
           questionslist=question.objects.filter(questionID__in=cmpquestion,domainCodeID=domainnames).values_list('questionID', flat=True)
@@ -643,7 +594,6 @@ class getCmpResultsAPI(generics.GenericAPIView):
                   questiondata['options']=optiondata
                   questiondata['correctoption']=correctoption.optionTranslationID.translationO['option']
                   cmpmarks=competition_MarkScheme.objects.get(competitionAgeID=cmpage.competitionAgeID,questionLevelCodeID=cmpquest.questionLevelCodeID)
-                  print(cmpmarks)
                   questiondata['marks']=cmpmarks.correctMarks
                   marks=marks+cmpmarks.correctMarks
                   totalscore=totalscore+cmpmarks.correctMarks
@@ -747,7 +697,9 @@ class getCmpResultsAPI(generics.GenericAPIView):
           resultjson["marks"]=marks
           Resultsresponse.append(resultjson)
           print("done")
-        return  JsonResponse({"domain_wise_questions":Resultsresponse,"studentID":request.user.loginID,"studentName":request.user.username,"TotalScore":studentEnrollmentlanguagecode.score,"totalMarks":totalscore}, safe=False)
+        totalscore=totalscore+studentEnrollmentlanguagecode.bonusMarks
+        total=studentEnrollmentlanguagecode.score+studentEnrollmentlanguagecode.bonusMarks
+        return  JsonResponse({"domain_wise_questions":Resultsresponse,"studentID":request.user.loginID,"studentName":request.user.username,"TotalScore":total,"totalMarks":totalscore}, safe=False)
       except Exception as e:
         return HttpResponse(e,status=404)
 
@@ -807,7 +759,6 @@ class practiceChallengeNames(APIView):
           print(agegrp[i].AgeGroupName)
           agegrpclass=AgeGroupClass.objects.filter(AgeGroupID=agegrp[i]).values_list('ClassID', flat=True)
           caption=str(list(agegrpclass))
-          print(caption)
           caption=caption.replace('[', '')
           caption=caption.replace(']', '')
           index=challengesnames.index(agegrp[i].AgeGroupName)
@@ -832,17 +783,14 @@ class PracChallengeQuestionAPI(generics.GenericAPIView):
         print(request.data['AgeGroupName'])
         lang=request.data['AgeGroupName'].split('-')
         language=code.objects.get(codeName=lang[1])
-        print(language)
         compage=competitionAge.objects.all()
         cmps=[]
-        print(len(compage))
         for comps in compage:
           today=datetime.now().date()
           endDate=comps.competitionID.endDate.date()
           if comps.AgeGroupClassID.AgeGroupID.AgeGroupName== request.data['AgeGroupName'] and comps.competitionID.competitionType.codeID==practice_challenge and today<endDate:
             cmps.append(comps.competitionID.competitionName)
         cmps = list(dict.fromkeys(cmps))
-        print("okok",cmps)
         if(len(cmps)>1):
           return Response("Something went wrong",status=404)
         compName=competition.objects.filter(competitionName=cmps[0])
@@ -852,20 +800,15 @@ class PracChallengeQuestionAPI(generics.GenericAPIView):
         for ages in agegrp:
           if ages.created_on.year==datetime.now().year:
             agegrpselected=ages
-        print("oko",agegrpselected)
         agegrpclasses=AgeGroupClass.objects.filter(AgeGroupID=agegrpselected).values_list('AgeGroupClassID', flat=True)
-        print("OOKK",agegrpclasses)
         agegrpclasses=list(agegrpclasses)
         newcmp=None
         cmpage = competitionAge.objects.filter(competitionID=compName[0].competitionID,AgeGroupClassID__in=agegrpclasses).values_list('competitionAgeID', flat=True)
         print((cmpage))
-        print("ok")
         if len(cmpage)==2:
           
           cmpage1=competitionAge.objects.get(competitionAgeID=cmpage[0])
-          print(cmpage1.AgeGroupClassID)
           cmpage2=competitionAge.objects.get(competitionAgeID=cmpage[1])
-          print(cmpage2.AgeGroupClassID)
           if cmpage1.AgeGroupClassID.AgeGroupID.AgeGroupName==cmpage2.AgeGroupClassID.AgeGroupID.AgeGroupName:
             newcmp=cmpage1
             print(newcmp)
@@ -888,7 +831,6 @@ class PracChallengeQuestionAPI(generics.GenericAPIView):
           questiondata['identifier']=quest.Identifier
           question_skills=""
           cs_skills=quest.questionID.cs_skills.split(',')
-          print(cs_skills)
           for skill in cs_skills:
             skill=int(skill)
             codeskills=code.objects.get(codeID=skill)
@@ -996,7 +938,6 @@ class GetAgeGroupToppers(APIView):
           ageGroupDict.append(studenttop)
         print(ageGroupDict)
         for d in ageGroupDict:
-          print("age",d)
           topperdata={}
           for student in stud:
             studentenroll=studentEnrollment.objects.get(studentEnrollmentID=student)
@@ -1006,17 +947,17 @@ class GetAgeGroupToppers(APIView):
             resdata['gender']=studentenroll.userID.gender.codeName
             resdata['time']=studentenroll.timeTaken
             resdata['rank']=1
-            resdata['score']=studentenroll.score
+            resdata['score']=studentenroll.score+studentenroll.bonusMarks
             resdata['AgeGroup']=studentenroll.competitionAgeID.AgeGroupClassID.AgeGroupID.AgeGroupName
-          
-            if d['AgeGroup']==studentenroll.competitionAgeID.AgeGroupClassID.AgeGroupID.AgeGroupName and d['score']<studentenroll.score:
+            studentscore=studentenroll.score+studentenroll.bonusMarks
+            if d['AgeGroup']==studentenroll.competitionAgeID.AgeGroupClassID.AgeGroupID.AgeGroupName and d['score']<studentscore:
                 d['score']=studentenroll.score
                 topperdata=resdata
                 d['time']=studentenroll.timeTaken
-            elif d['AgeGroup']==studentenroll.competitionAgeID.AgeGroupClassID.AgeGroupID.AgeGroupName and d['score']==studentenroll.score and d['time']>studentenroll.timeTaken:
+            elif d['AgeGroup']==studentenroll.competitionAgeID.AgeGroupClassID.AgeGroupID.AgeGroupName and d['score']==studentscore and d['time']>studentenroll.timeTaken:
                 d['time']=studentenroll.timeTaken
                 topperdata=resdata
-            elif d['AgeGroup']==studentenroll.competitionAgeID.AgeGroupClassID.AgeGroupID.AgeGroupName and d['score']==studentenroll.score and d['time']==studentenroll.timeTaken:
+            elif d['AgeGroup']==studentenroll.competitionAgeID.AgeGroupClassID.AgeGroupID.AgeGroupName and d['score']==studentscore and d['time']==studentenroll.timeTaken:
                 topperdata=resdata
           if topperdata!={}:
             responsedata.append(topperdata)
@@ -1048,12 +989,14 @@ class GetSchoolToppers(APIView):
             compage=competitionAge.objects.get(competitionAgeID=d.data[i]['competitionAgeID'])
             userdata=User.objects.get(userID=d.data[i]['userID'])
             schoolclassdata=schoolClass.objects.get(schoolClassID=d.data[i]['schoolClassID'])
+            score=d.data[i]['score']+d.data[i]['bonusMarks']
+            totalscore=GetParticipationCertificates.getTotalscore(d.data[i]['competitionAgeID'])+d.data[i]['bonusMarks']
             data.append({'year':compage.competitionID.startDate.year,
                          'Name':userdata.username,
                          'loginID':userdata.loginID,
                          'group':compage.AgeGroupClassID.AgeGroupID.AgeGroupName,
-                         'score':str(d.data[i]['score']),
-                         'total':GetParticipationCertificates.getTotalscore(d.data[i]['competitionAgeID']),
+                         'score':str(score),
+                         'total':totalscore,
                          'time': d.data[i]['timeTaken'],
                          'class':str(schoolclassdata.classNumber)})
        
@@ -1070,13 +1013,10 @@ class GetSchoolClassStudents(APIView):
         print(request.user.userID)
         cmpname=request.data['cmpName']
         usrrole=UserRole.objects.get(userID=request.user.userID)
-        print(usrrole)
         usrroleLocation=UserRoleLocation.objects.get(userRoleID=usrrole.userRoleID)
-        print(usrroleLocation.locationObjectID)
         school_name = school.objects.get(schoolID=usrroleLocation.locationObjectID)
         comp= competition.objects.get(competitionName=cmpname)
         schclass=schoolClass.objects.get(schoolID=school_name.schoolID,classNumber=request.data['class_id'])
-        print(schclass)
         cmpAge= competitionAge.objects.filter(competitionID=comp.competitionID )
         print(cmpAge)
         for data in cmpAge:
@@ -1101,9 +1041,7 @@ class GetParticipationCertificatesforStudentPortal(APIView):
         current_user=User.objects.get(loginID=request.user.created_by)
         c = CustomizePPT()
         usrrole=UserRole.objects.get(userID=current_user.userID)
-        print(usrrole)
         usrroleLocation=UserRoleLocation.objects.get(userRoleID=usrrole.userRoleID)
-        print(usrroleLocation.locationObjectID)
         school_name = school.objects.get(schoolID=usrroleLocation.locationObjectID)
         studentsenroll=studentEnrollment.objects.filter(userID=request.user.userID)
         for students in studentsenroll:
@@ -1114,7 +1052,7 @@ class GetParticipationCertificatesforStudentPortal(APIView):
         print("Here in certificates for Student Portal",data_user)
         data=[]
         print(data_user.competitionAgeID)
-        totalscore=GetSchoolToppers.getTotalscore(data_user.competitionAgeID)
+        totalscore=GetSchoolToppers.getTotalscore(data_user.competitionAgeID)+data_user.bonusMarks
         template=t.get(request,type='Participation')
         print('Latest',template.data)
       
@@ -1122,11 +1060,10 @@ class GetParticipationCertificatesforStudentPortal(APIView):
                          'Name':request.user.username,
                          'loginID':request.user.loginID,
                          'group':data_user.competitionAgeID.AgeGroupClassID.AgeGroupID.AgeGroupName,
-                         'score':str(data_user.score),
+                         'score':str(data_user.score+data_user.bonusMarks),
                          'total':totalscore,
                          'class':str(data_user.competitionAgeID.AgeGroupClassID.ClassID.classID)})
            
-        print(data)
        
         schooldata=school_name.schoolName+', '+school_name.addressID.city
         type='participation'
@@ -1142,9 +1079,7 @@ class GetParticipationCertificatesforSelectedStudents(APIView):
         print(request.user.userID)
         c = CustomizePPT()
         usrrole=UserRole.objects.get(userID=request.user.userID)
-        print(usrrole)
         usrroleLocation=UserRoleLocation.objects.get(userRoleID=usrrole.userRoleID)
-        print(usrroleLocation.locationObjectID)
         school_name = school.objects.get(schoolID=usrroleLocation.locationObjectID)
        
         t=GetLatestTemplate()
@@ -1166,7 +1101,6 @@ class GetParticipationCertificatesforSelectedStudents(APIView):
                          'total':i['Totalscore'],
                          'class':str(i['class'])})
            
-        print(data)
        
         schooldata=school_name.schoolName+', '+school_name.addressID.city
         type='participation'
@@ -1201,12 +1135,14 @@ class GetParticipationCertificates(APIView):
             compage=competitionAge.objects.get(competitionAgeID=d.data[i]['competitionAgeID'])
             userdata=User.objects.get(userID=d.data[i]['userID'])
             schoolclassdata=schoolClass.objects.get(schoolClassID=d.data[i]['schoolClassID'])
+            score=d.data[i]['score']+d.data[i]['bonusMarks']
+            totalscore=GetParticipationCertificates.getTotalscore(d.data[i]['competitionAgeID'])+d.data[i]['bonusMarks']
             data.append({'year':compage.competitionID.startDate.year,
                          'Name':userdata.username,
                           'loginID':userdata.loginID,
                          'group':compage.AgeGroupClassID.AgeGroupID.AgeGroupName,
-                         'score':str(d.data[i]['score']),
-                         'total':GetParticipationCertificates.getTotalscore(d.data[i]['competitionAgeID']),
+                         'score':str(score),
+                         'total':totalscore,
                          'class':str(schoolclassdata.classNumber)})
          
         print((schoolclassdata.schoolID.schoolName))
@@ -1256,170 +1192,6 @@ class GetStudentsAgeGroupWise(APIView):
         lists = studentEnrollment.objects.filter(~Q(score = 999),competitionAgeID__in =cmpages,schoolClassID__in=schclasses).order_by('-score','timeTaken')
         serializers=studentEnrollmentViewSerializer(lists,many=True)
         return Response(serializers.data)
-
-
-# @parser_classes((MultiPartParser,))
-# class CustomizePPT(APIView):
-#     def ppt(self,f,data,school,type,duplicate):
-#         prs = Presentation(f)
-#         NamesOfParticipants = []
-#         NOP = []
-#         text_runs = []
-#         def duplicate_slide(pres, index):
-#             template = pres.slides[index]
-#             try:
-#                 blank_slide_layout = pres.slide_layouts[6]
-#             except:
-#                 blank_slide_layout = pres.slide_layouts[len(pres.slide_layouts) - 1]
-#             copied_slide = pres.slides.add_slide(blank_slide_layout)
-#             for shp in template.shapes:
-#                 el = shp.element
-#                 newel = copy.deepcopy(el)
-#                 copied_slide.shapes._spTree.insert_element_before(newel, 'p:extLst')
-#             for _, value in six.iteritems(template.part.rels):
-#                 if "notesSlide" not in value.reltype:
-#                     copied_slide.part.rels.add_relationship(value.reltype,
-#                                                             value._target,
-#                                                             value.rId)
-#             return copied_slide
-#         if duplicate==True:
-#             for i in range(0,len(data)-1):
-#                 duplicate_slide(prs, 0)
-#         i = -1
-#         print("Count",len(prs.slides))
-#         for slide in prs.slides:
-#             if i < (len(data) - 1):
-#                 i = i + 1
-#                 for shape in slide.shapes:
-#                     if shape.has_text_frame:
-#                         for paragraph in shape.text_frame.paragraphs:
-#                             for run in paragraph.runs:
-#                                 if (shape.text.find('Name')) != -1:
-#                                     cur_text = run.text
-#                                     nameofPDF=data[i]['Name']+'-'+data[i]['loginID']+'-'+str(data[i]['year'])
-#                                     NamesOfParticipants.append(nameofPDF)
-#                                     new_text = cur_text.replace(str('Name'), str(data[i]['Name']))
-#                                     run.text = new_text
-#                                 if (shape.text.find('year')) != -1:
-#                                     cur_text = run.text
-#                                     new_text = cur_text.replace(str('year'), str(data[i]['year']))
-#                                     run.text = new_text
-#                                 if (shape.text.find('class')) != -1:
-#                                     cur_text = run.text
-#                                     new_text = cur_text.replace(str('class'), str(data[i]['class']))
-#                                     run.text = new_text
-#                                 if (shape.text.find('group')) != -1:
-#                                     cur_text = run.text
-#                                     new_text = cur_text.replace(str('group'), str(data[i]['group']))
-#                                     run.text = new_text
-#                                 if (shape.text.find('score')) != -1:
-#                                     cur_text = run.text
-#                                     new_text = cur_text.replace(str('score'), str(data[i]['score']))
-#                                     run.text = new_text
-#                                 if (shape.text.find('total')) != -1:
-#                                     cur_text = run.text
-#                                     new_text = cur_text.replace(str('total'), str(data[i]['total']))
-#                                     run.text = new_text
-#                                 if (shape.text.find('[')) != -1:
-#                                     cur_text = run.text
-#                                     new_text = cur_text.replace(str('['), str(''))
-#                                     run.text = new_text
-#                                 if (shape.text.find(']')) != -1:
-#                                     cur_text = run.text
-#                                     new_text = cur_text.replace(str(']'), str(''))
-#                                     run.text = new_text
-#             else:
-#                 rId = prs.slides._sldIdLst[-1].rId
-#                 prs.part.drop_rel(rId)
-#                 del prs.slides._sldIdLst[-1]
-#         if(type=='participation'):
-#           NOP = NamesOfParticipants[::2]
-#         elif(type=='schoolToppers'):
-#           NOP = NamesOfParticipants
-#         path=''
-#         ldir = os.path.join(settings.MEDIA_ROOT) + '/output//'
-#         if(len(ldir)!=0):
-#           shutil.rmtree(ldir)
-#           os.makedirs(os.path.join(settings.MEDIA_ROOT) +'/output//')
-#         if(type=='participation'):
-#             path=os.path.join(settings.MEDIA_ROOT) + '/output//'+school+'-Class-'+data[0]['class']+'-'+data[0]['group']+'-'+str(data[0]['year'])+'.pptx'
-#         elif(type=='schoolToppers'):
-#             path=os.path.join(settings.MEDIA_ROOT) + '/output//' + school + '-Toppers-' + data[0][ 'group'] + '-' +str(data[0]['year'])+'.pptx'
-#         elif (type == 'nationalToppers'):
-#             path = os.path.join(settings.MEDIA_ROOT) + '/output//' +  'National Toppers-' + data[0]['group'] + '-' + data[0]['year'] + '.pptx'
-#         prs.save(path)
-#         # pythoncom.CoInitialize()
-#         def zipdir(self,source):
-#             print("Entered zipdir")
-#             pdfName=''
-#             if(type=='participation'):
-#                 pdfName=school+'-Class-'+data[0]['class']+'-'+data[0]['group']+'-'+str(data[0]['year'])
-#             elif(type=='schoolToppers'):
-#                 pdfName=school + '-Toppers-' + data[0][ 'group'] + '-' +str(data[0]['year'])
-#             basedir = pdfName
-#             baseName = os.path.join(settings.MEDIA_ROOT) + '/ZipFolder/BebrasCertificate'
-#             shutil.make_archive(base_dir=basedir,root_dir=source,format='zip',base_name=baseName)
-#             shutil.rmtree(os.path.join(settings.MEDIA_ROOT) + '/ZipFolder//'+pdfName)
-#             print("Done!")
-#         def splitPDF(self,path1):
-#             pdfName=''
-#             if(type=='participation'):
-#                 pdfName=school+'-Class-'+data[0]['class']+'-'+data[0]['group']+'-'+str(data[0]['year'])
-#                 CertiFolder = os.path.join(settings.MEDIA_ROOT)+'/ZipFolder//'+pdfName
-#                 os.makedirs(CertiFolder)
-#             elif(type=='schoolToppers'):
-#                 pdfName=school + '-Toppers-' + data[0][ 'group'] + '-' +str(data[0]['year'])
-#                 CertiFolder = os.path.join(settings.MEDIA_ROOT)+'/ZipFolder//'+pdfName
-#                 os.makedirs(CertiFolder)
-#             pdfFileObj = open(path1, "rb")
-#             inputpdf = PdfFileReader(pdfFileObj)
-#             i=0
-#             print(inputpdf.numPages)
-#             if(inputpdf.numPages==1):
-#                 output = PdfFileWriter()
-#                 output.addPage(inputpdf.getPage(i))
-#                 outputFileName = os.path.join((settings.MEDIA_ROOT)+'/ZipFolder//'+pdfName,NOP[0]+".pdf" )
-#                 with open(outputFileName, "wb") as outputStream:
-#                   output.write(outputStream)
-#             else:
-#                 for i in range(inputpdf.numPages):
-#                     output = PdfFileWriter()
-#                     output.addPage(inputpdf.getPage(i))
-#                     outputFileName = os.path.join((settings.MEDIA_ROOT)+'/ZipFolder//'+pdfName,NOP[i]+".pdf")
-#                     with open(outputFileName, "wb") as outputStream:
-#                       output.write(outputStream)
-#             pdfFileObj.close()
-#         # def convert(files, formatType=32):
-#         #     powerpoint = win32com.client.Dispatch("Powerpoint.Application")
-#         #     powerpoint.Visible = 1
-#         #     print("ppt",powerpoint)
-#         #     for filename in files:
-#         #         newname = os.path.splitext(filename)[0] + ".pdf"
-#         #         print(filename)
-#         #         deck = powerpoint.Presentations.Open(filename,WithWindow=False)
-#         #         deck.SaveAs(newname, formatType)
-#         #         deck.Close()
-#         #     powerpoint.Quit()
-#         files = glob.glob(path)  # <--- ONLY CHANGE
-#         # convert(files)
-#         for filename in files:
-#                 # command="libreoffice --headless --invisible --convert-to pdf '" + filename +"'"
-#                 command = "unoconv -f pdf '" + filename+"'"
-#                 os.system(command)
-#                 os.remove(path)
-#         ldir =(os.path.join(settings.MEDIA_ROOT) + '/ZipFolder//')
-#         if(len(ldir)!=0):
-#           shutil.rmtree(ldir)
-#           os.makedirs(os.path.join(settings.MEDIA_ROOT) +'/ZipFolder//')
-#         path1=''
-#         if(type=='participation'):
-#             path1=os.path.join(settings.MEDIA_ROOT) + '/output//'+school+'-Class-'+data[0]['class']+'-'+data[0]['group']+'-'+str(data[0]['year'])+'.pdf'
-#         elif(type=='schoolToppers'):
-#             path1=os.path.join(settings.MEDIA_ROOT) + '/output//' + school + '-Toppers-' + data[0][ 'group'] + '-' +str(data[0]['year'])+'.pdf'
-#         print(path1,path)
-#         splitPDF(self,path1)
-#         source= os.path.join(settings.MEDIA_ROOT) + '/ZipFolder//'
-#         zipdir(self,source)
         
 
 @parser_classes((MultiPartParser,))
@@ -1572,21 +1344,9 @@ class CustomizePPT(APIView):
                     with open(outputFileName, "wb") as outputStream:
                       output.write(outputStream)
             pdfFileObj.close()
-        # def convert(files, formatType=32):
-        #     powerpoint = win32com.client.Dispatch("Powerpoint.Application")
-        #     powerpoint.Visible = 1
-        #     print("ppt",powerpoint)
-        #     for filename in files:
-        #         newname = os.path.splitext(filename)[0] + ".pdf"
-        #         print(filename)
-        #         deck = powerpoint.Presentations.Open(filename,WithWindow=False)
-        #         deck.SaveAs(newname, formatType)
-        #         deck.Close()
-        #     powerpoint.Quit()
+   
         files = glob.glob(path)  # <--- ONLY CHANGE
-        # convert(files)
         for filename in files:
-                # command="libreoffice --headless --invisible --convert-to pdf '" + filename +"'"
                 command = "unoconv -f pdf '" + filename+"'"
                 os.system(command)
                 os.remove(path)
