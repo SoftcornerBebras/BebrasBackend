@@ -506,13 +506,17 @@ class SchoolRegisterAPI(generics.GenericAPIView):
           schooldata['schoolGroupID']=typecode.codeID
           schooldata['addressID']=address.addressID
           del schooldata['schoolType']
-          if school.objects.filter(schoolName=schooldata['schoolName'],addressID=schooldata['addressID'],UDISEcode=schooldata['UDISEcode']).count() != 0:
+          if school.objects.filter(UDISEcode=schooldata['UDISEcode']).count() != 0:
              school1=school.objects.get(schoolName=schooldata['schoolName'],addressID=schooldata['addressID'],UDISEcode=schooldata['UDISEcode'])
              print(school1)
-             return Response({
-              "address": AddAddressSerializer(address, context=self.get_serializer_context()).data,
-              "school":school1.schoolID,
-                })
+             if(school1.registered_By!=None):
+               Responsestring="The school is already registered by "+school1.registered_By
+               return Response(Responsestring,status=404)
+             else:
+              return Response({
+                "address": AddAddressSerializer(address, context=self.get_serializer_context()).data,
+                "school":school1.schoolID,
+                  })
           else:
             serializer = AddSchoolSerializer(data=schooldata)
             if serializer.is_valid():
@@ -811,9 +815,9 @@ class UserResultViewAPI(APIView):
             userdata['loginID']=current_user.loginID
             userdata['userName']=current_user.userName
             userdata['competitionName']=c.competitionAgeID.competitionID.competitionName
-            userdata['score']=c.score
+            userdata['score']=c.score+c.bonusMarks
             totalscore=UserResultViewAPI.getTotalscore(c.competitionAgeID)
-            userdata['Totalscore']=totalscore
+            userdata['Totalscore']=totalscore+c.bonusMarks
             response.append(userdata)
             print("TotalScore ",totalscore)
           return JsonResponse(response, safe=False)
@@ -854,9 +858,9 @@ class AllUserResultViewAPI(APIView):
                 userdata['competitionName']=c.competitionAgeID.competitionID.competitionName
                 userdata['ageGroup']=c.competitionAgeID.AgeGroupClassID.AgeGroupID.AgeGroupName
                 userdata['class']=c.schoolClassID.classNumber
-                userdata['score']=c.score
+                userdata['score']=c.score+c.bonusMarks
                 totalscore=AllUserResultViewAPI.getTotalscore(c.competitionAgeID)
-                userdata['Totalscore']=totalscore
+                userdata['Totalscore']=totalscore+c.bonusMarks
                 response.append(userdata)
           except studentEnrollment.DoesNotExist:
             print("Not enrolled")
