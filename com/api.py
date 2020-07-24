@@ -51,7 +51,6 @@ class SchoolClassesAPI(APIView):
         print(request.data)
         userrole=UserRole.objects.get(userID=request.user.userID)
         userrolelocation=UserRoleLocation.objects.get(userRoleID=userrole.userRoleID)
-        print(userrolelocation.locationObjectID)
         School=school.objects.get(schoolID=userrolelocation.locationObjectID)
         schoolclass=schoolClass.objects.filter(schoolID=School.schoolID).values_list('classNumber', flat=True)
         return JsonResponse({"schoolClasses":list(schoolclass)}, safe=False)
@@ -73,13 +72,9 @@ class CompetitionNameForCertificatesAPI(APIView):
         for data in compAge:
           endDate=data.competitionID.endDate
           if endDate.date() < datetime.now().date() and data.competitionID.competitionType.codeID==main_challenge:
-            print(data.competitionID.competitionName)
             sclassid=data.AgeGroupClassID.ClassID.classID
             if sclassid==int(request.data['class_id']):
                 cmpNames.append(data.competitionID.competitionName)
-                print(cmpNames)
-        print(cmpNames)
-        print(dict.fromkeys(cmpNames))
         cmpNames = list(dict.fromkeys(cmpNames))
         cmpNames.reverse()
         print(cmpNames)
@@ -102,7 +97,6 @@ class CompetitionNameAPI(APIView):
         for data in compAge:
           startDate=data.competitionID.startDate
           if startDate.date() > datetime.now().date() and data.competitionID.competitionType.codeID==main_challenge:
-            print(data.competitionID.competitionName)
             sclassid=data.AgeGroupClassID.ClassID.classID
             if sclassid==int(request.data['class_id']):
                 cmpNames.append(data.competitionID.competitionName)
@@ -154,7 +148,6 @@ class SchoolTypeName(APIView):
       try:
         codes = code.objects.filter(codeGroupID=schooltype).values_list('codeName', flat=True)
         codes=list(codes)
-        print(codes)
         codes.sort()
         if "Other" in codes: codes.remove("Other")
         codes.append("Other")
