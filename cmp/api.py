@@ -22,6 +22,7 @@ import time as t
 import os
 from os import walk
 import glob
+from random import shuffle
 # import pythoncom
 # import win32com.client
 # from win32com.client import Dispatch
@@ -67,7 +68,7 @@ class getCompetitionAPI(generics.GenericAPIView):
         for data in studentenrolled:
           endDate=data.competitionAgeID.competitionID.endDate
           startDate=data.competitionAgeID.competitionID.startDate
-          if endDate.date() >= datetime.now().date() and datetime.now().date()>=startDate.date():
+          if endDate.replace(tzinfo=None) > datetime.now()-timedelta(seconds=20) and datetime.now()-timedelta(seconds=20) >= startDate.replace(tzinfo=None):
             if data.score!=999:
               attempted=True
             else:
@@ -216,6 +217,8 @@ class getCmpQuestionAPI(generics.GenericAPIView):
           timeduration=studentEnrollmentlanguagecode.competitionAgeID.competitionID.testDuration
         studentEnrollmentlanguagecode.timeTaken=datetime.now()
         studentEnrollmentlanguagecode.save()
+        # shuffle(response)
+        # print(response,type(response))
         print("Time updated")
         return  JsonResponse({"questions":response,"studentEnrollmentID":studentEnrollmentlanguagecode.studentEnrollmentID,"timeduration":timeduration}, safe=False)
       except Exception as e:
@@ -735,19 +738,18 @@ class practiceChallengeNames(APIView):
     ]
     def get(self, request):
       try:
-        comp=competition.objects.filter(competitionType=practice_challenge)
-        challenges=[]
+        comp=competition.objects.filter(competitionType=practice_challenge).order_by('-endDate')
         challengesnames=[]
         agegrp=[]
         print(len(comp))
         for data in comp:
           startDate=data.startDate.date()
           today=datetime.now().date()
-          endDate=data.endDate.date()
-         
+          endDate=data.endDate.date() 
           if today > startDate and today < endDate:
-            challenges.append(data.competitionID)
-        cmpage=competitionAge.objects.filter(competitionID__in=challenges)
+            challenges=data.competitionID
+            break
+        cmpage=competitionAge.objects.filter(competitionID=challenges)
         print(len(cmpage))
         for data in cmpage:
           agegrp.append(data.AgeGroupClassID.AgeGroupID)
