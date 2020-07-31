@@ -39,10 +39,6 @@ from rest_framework.parsers import FileUploadParser,MultiPartParser
 from PyPDF2 import PdfFileWriter, PdfFileReader
 import shutil
 
-
-
-
-
 class getCompetitionAPI(generics.GenericAPIView):
     permission_classes = [
       permissions.IsAuthenticated,
@@ -85,6 +81,28 @@ class getCompetitionAPI(generics.GenericAPIView):
             cmpobj={"competitionname":data.competitionAgeID.competitionID.competitionName,"startDate":data.competitionAgeID.competitionID.startDate.date()
               ,"endDate":data.competitionAgeID.competitionID.endDate.date(),"testDuration":timeduration,"attempted":attempted}
             cmpNames.append(cmpobj)
+        if len(cmpNames)==0:
+          return Response("Sorry the competition you registered for has not started yet ",status=404)
+        return  JsonResponse({"competitionnames":cmpNames}, safe=False)
+      
+      except Exception as e:
+        return HttpResponse(e,status=404)
+
+class getActiveCompetitionAPI(generics.GenericAPIView):
+    permission_classes = [
+      permissions.AllowAny,
+    ]
+  
+    def get(self, request):
+      try:
+        cmpNames=[]
+        competitions=competition.objects.filter(competitionType=main_challenge)
+        for data in competitions:
+          endDate=data.endDate
+          startDate=data.startDate
+          if endDate.year==datetime.now().year:
+          # if endDate.replace(tzinfo=None) > datetime.now()-timedelta(seconds=20) and datetime.now()-timedelta(seconds=20) >= startDate.replace(tzinfo=None):
+            cmpNames.append(data.competitionName)
         if len(cmpNames)==0:
           return Response("Sorry the competition you registered for has not started yet ",status=404)
         return  JsonResponse({"competitionnames":cmpNames}, safe=False)
@@ -205,6 +223,11 @@ class getCmpQuestionAPI(generics.GenericAPIView):
               response.append(questiondata)
           else:
             questiondata['question_type']="question_without_images_without_options"
+            correctoption=correctOption.objects.get(questionTranslationID=quest.questionTranslationID)
+            if (correctoption.ansText).isnumeric():
+              questiondata['answertext_type']="number"
+            else:
+              questiondata['answertext_type']="text"
             response.append(questiondata)
         print("done")
         if testattempted:
@@ -217,7 +240,7 @@ class getCmpQuestionAPI(generics.GenericAPIView):
           timeduration=studentEnrollmentlanguagecode.competitionAgeID.competitionID.testDuration
         studentEnrollmentlanguagecode.timeTaken=datetime.now()
         studentEnrollmentlanguagecode.save()
-        # shuffle(response)
+        shuffle(response)
         # print(response,type(response))
         print("Time updated")
         return  JsonResponse({"questions":response,"studentEnrollmentID":studentEnrollmentlanguagecode.studentEnrollmentID,"timeduration":timeduration}, safe=False)
@@ -351,6 +374,164 @@ class studentResponseAPI(generics.GenericAPIView):
         student_enrolled.timeTaken=datetime.now()
         student_enrolled.save()
         print("Time updated")  
+        return Response("Success",status=200)
+   
+      except Exception as e:
+        return HttpResponse(e,status=404)
+
+class studentResponseFromExcelAPI(generics.GenericAPIView):
+    permission_classes = [
+      permissions.AllowAny,
+    ]
+    serializer_class = StudentResponseSerializer
+    def calculateScore(studentenrollmentid):
+        print("Calculating score")
+        studentenrolled=studentEnrollment.objects.get(studentEnrollmentID=studentenrollmentid)
+        studentenrolled.score=0
+        studentenrolled.save()
+        studentenrolled=studentEnrollment.objects.get(studentEnrollmentID=studentenrollmentid)
+        studentresponses=studentResponse.objects.filter(studentEnrollmentID=studentenrolled)
+        print(len(studentresponses))
+        cmpquest=competitionQuestion.objects.filter(competitionAgeID=studentenrolled.competitionAgeID)
+        if(len(studentresponses)!=len(cmpquest)):
+          return "error"
+        for data in cmpquest:
+          questr=questionTranslation.objects.get(questionID=data.questionID,languageCodeID=studentenrolled.languageCodeID)
+          correctOpt=correctOption.objects.get(questionTranslationID=questr.questionTranslationID)
+          studentresponse=studentResponse.objects.get(studentEnrollmentID=studentenrolled,competitionQuestionID=data.competitionQuestionID)
+          competition_Marks=competition_MarkScheme.objects.get(competitionAgeID=studentenrolled.competitionAgeID,questionLevelCodeID=studentresponse.competitionQuestionID.questionLevelCodeID)
+          if correctOpt.optionTranslationID is not None:
+            if studentresponse.optionTranslationID is not None:
+              if correctOpt.optionTranslationID.optionTranslationID == studentresponse.optionTranslationID.optionTranslationID:
+                print("correct")
+                studentenrolled.score=studentenrolled.score+competition_Marks.correctMarks
+                studentenrolled.save()
+                print("Score Saved")
+              elif correctOpt.optionTranslationID.optionTranslationID != studentresponse.optionTranslationID.optionTranslationID:
+                print("Incorrect")
+                studentenrolled.score=studentenrolled.score+competition_Marks.incorrectMarks
+                studentenrolled.save()
+                print(" Score Saved")
+
+    
+      
+          elif correctOpt.optionTranslationID is  None and correctOpt.ansText is not None:
+            if studentresponse.ansText is not None:
+              if correctOpt.ansText == studentresponse.ansText:
+                print("correct")
+                studentenrolled.score=studentenrolled.score+competition_Marks.correctMarks
+                studentenrolled.save()
+                print("Score Saved")
+              elif correctOpt.ansText != studentresponse.ansText:
+                print("Incorrect")
+                studentenrolled.score=studentenrolled.score+competition_Marks.incorrectMarks
+                studentenrolled.save()
+                print(" Score Saved")
+    
+    def post(self, request):
+      try:
+        answerlist=["A","B","C","D","E"]
+        print(request.data)
+        compName=request.data['competitionName']
+        responses=request.data['responses']
+        #tell me what to do with group
+        for d in responses:
+          studentenrollmentid=None
+          print(d['loginID'],d['password'])
+          current_user=User.objects.get(loginID=d['loginID'])
+          current_studentenrolled=studentEnrollment.objects.filter(userID=current_user)
+          print(current_studentenrolled)
+          del d['loginID']
+          del d['password']
+          del d['Group']
+          print(current_user)
+          for studentenroll in current_studentenrolled:
+            if studentenroll.competitionAgeID.competitionID.competitionName==compName:
+              studentenrollmentid=studentenroll
+          print(studentenrollmentid)
+          if studentenrollmentid==None:
+            responsestring="The user "+current_user.loginID+" has not been enrolled "
+            return Response(responsestring,status=400)
+          for key, value in d.items():
+            studentresponsedata={}
+            print( key, value)
+            ques=key
+            quesTranslation=questionTranslation.objects.get(Identifier=ques)
+            print("got question ",quesTranslation)
+            student_enrolled=studentEnrollment.objects.get(studentEnrollmentID=studentenrollmentid.studentEnrollmentID)
+            print(student_enrolled.competitionAgeID,quesTranslation.questionID.questionID)
+            # assuming only competitionageid and question id will be a unique pair
+            cmpques=competitionQuestion.objects.get(questionID=quesTranslation.questionID.questionID,competitionAgeID=student_enrolled.competitionAgeID)
+            print(cmpques.competitionQuestionID)
+            opt=value
+            opti=option.objects.filter(questionID=quesTranslation.questionID).values_list('optionID', flat=True)
+            opti=list(opti)
+            if len(opti)==0:
+                if value=="":
+                  studentresponsedata['ansText']=None
+                else:
+                  studentresponsedata['ansText']=value
+                studentresponsedata['optionTranslationID']=None
+            else:
+                if opt=="":
+                  studentresponsedata['optionTranslationID']=None
+                  studentresponsedata['ansText']=None
+                else:
+                  if value.isnumeric():
+                    studentresponsedata['optionTranslationID']=None
+                  else:
+                    position=answerlist.index(value.upper())
+                    
+                    optiontranslations=optionTranslation.objects.filter(optionID__in=opti,languageCodeID=student_enrolled.languageCodeID)
+                    print("--------------------------------------",len(optiontranslations))
+                    print(optiontranslations,value,position)
+                    opTranslation=optionTranslation.objects.get(optionTranslationID=(optiontranslations[position]).optionTranslationID)
+                    print(opTranslation)
+                    studentresponsedata['optionTranslationID']=opTranslation.optionTranslationID
+                  studentresponsedata['ansText']=None
+            studentresponsedata['competitionQuestionID']=cmpques.competitionQuestionID
+            # startTime=student_enrolled.timeTaken #START TIME refers to student enrollment time taken
+            # endTime=datetime.now().time()        #END TIME refers to the current time
+            # time_difference = datetime.combine(date.today(),endTime)-datetime.combine(date.today(),startTime)
+            # time_diff=round(time_difference.seconds/60,4)
+            time_diff=1.0
+            studentresponsedata['time']=1.0
+            print(studentresponsedata)   
+            try:
+              #student has already given response
+              student_res=studentResponse.objects.get(competitionQuestionID=cmpques.competitionQuestionID,studentEnrollmentID=student_enrolled.studentEnrollmentID)
+              student_res.time=round(student_res.time,4)+time_diff
+              if studentresponsedata['optionTranslationID']==None and studentresponsedata['ansText']==None:
+                student_res.optionTranslationID=None
+                student_res.ansText=None
+              elif  studentresponsedata['optionTranslationID']!=None and studentresponsedata['ansText']==None:
+                student_res.optionTranslationID=opTranslation
+              else:
+                student_res.ansText=studentresponsedata['ansText']
+                print(student_res.ansText)
+              student_res.save()
+              print(" Student Response Updated")
+            except studentResponse.DoesNotExist:
+              #student is giving response for the first time
+              print("Saving now")
+              studentresponsedata['studentEnrollmentID']=student_enrolled.studentEnrollmentID
+              serializer = StudentResponseSerializer(data=studentresponsedata)
+              if serializer.is_valid():
+                studentres = serializer.save() 
+                print(" Student Response Saved")
+              else:
+                errors=''
+                for i in serializer.errors : 
+                  errors=errors+ i +' '+ str(serializer.errors[i])
+                  errors="Error : "+errors
+                return Response(errors,status=404)
+            student_enrolled.timeTaken=datetime.now()
+            student_enrolled.save()
+            print("Time updated")  
+          statusdata=studentResponseFromExcelAPI.calculateScore(studentenrollmentid.studentEnrollmentID)
+          if statusdata=="error":
+            responsestring="You haven't completed the test for "+studentenrollmentid.userID.loginID
+            return Response(responsestring,status=400)
         return Response("Success",status=200)
    
       except Exception as e:
@@ -783,19 +964,18 @@ class PracChallengeQuestionAPI(generics.GenericAPIView):
         request.data['AgeGroupName']=request.data['AgeGroupName'][:position]
         request.data['AgeGroupName']=request.data['AgeGroupName'].strip()
         print(request.data['AgeGroupName'])
-        lang=request.data['AgeGroupName'].split('-')
+        lang=request.data['AgeGroupName'].split('-')    
         language=code.objects.get(codeName=lang[1])
-        compage=competitionAge.objects.all()
-        cmps=[]
-        for comps in compage:
+        comp=competition.objects.filter(competitionType=practice_challenge).order_by('-endDate')
+        print(len(comp))
+        for data in comp:
+          startDate=data.startDate.date()
           today=datetime.now().date()
-          endDate=comps.competitionID.endDate.date()
-          if comps.AgeGroupClassID.AgeGroupID.AgeGroupName== request.data['AgeGroupName'] and comps.competitionID.competitionType.codeID==practice_challenge and today<endDate:
-            cmps.append(comps.competitionID.competitionName)
-        cmps = list(dict.fromkeys(cmps))
-        if(len(cmps)>1):
-          return Response("Something went wrong",status=404)
-        compName=competition.objects.filter(competitionName=cmps[0])
+          endDate=data.endDate.date() 
+          if today > startDate and today < endDate:
+            challenges=data.competitionName
+            break
+        compName=competition.objects.filter(competitionName=challenges)
         print(compName[0],compName)
         agegrp=AgeGroup.objects.filter(AgeGroupName=request.data['AgeGroupName'])
         agegrpselected=None
@@ -807,8 +987,7 @@ class PracChallengeQuestionAPI(generics.GenericAPIView):
         newcmp=None
         cmpage = competitionAge.objects.filter(competitionID=compName[0].competitionID,AgeGroupClassID__in=agegrpclasses).values_list('competitionAgeID', flat=True)
         print((cmpage))
-        if len(cmpage)==2:
-          
+        if len(cmpage)==2:     
           cmpage1=competitionAge.objects.get(competitionAgeID=cmpage[0])
           cmpage2=competitionAge.objects.get(competitionAgeID=cmpage[1])
           if cmpage1.AgeGroupClassID.AgeGroupID.AgeGroupName==cmpage2.AgeGroupClassID.AgeGroupID.AgeGroupName:
@@ -817,7 +996,6 @@ class PracChallengeQuestionAPI(generics.GenericAPIView):
         else:
           return Response("Something went wrong",status=404)
         cmpage=newcmp
-        
         cmpquestion=competitionQuestion.objects.filter(competitionAgeID=cmpage.competitionAgeID).values_list('questionID', flat=True)
         cmpquestion=list(cmpquestion)
         print(len(cmpquestion))
@@ -899,6 +1077,10 @@ class PracChallengeQuestionAPI(generics.GenericAPIView):
           else:
             questiondata['question_type']="question_without_images_without_options"
             questiondata['correctoption']=correctoption.ansText
+            if (correctoption.ansText).isnumeric():
+              questiondata['answertext_type']="number"
+            else:
+              questiondata['answertext_type']="text"
             cmpmarks=competition_MarkScheme.objects.get(competitionAgeID=cmpage.competitionAgeID,questionLevelCodeID=cmpquest.questionLevelCodeID)
             print(cmpmarks)
             questiondata['Correct_marks']=cmpmarks.correctMarks
