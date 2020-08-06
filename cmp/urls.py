@@ -77,6 +77,7 @@ urlpatterns = [
     path('getcmpnamesAnalysis', getCompetitionsNamesForAnalysisAPI.as_view()),
     path('savedstudentResponse', getAlreadySavedResponse.as_view()),
     path('studentResponseFromExcel', studentResponseFromExcelAPI.as_view()),
+    path('validateOfflineUpload', validateOfflineUpload.as_view()),
     path('studentResponse', studentResponseAPI.as_view()),
     path('calcTotalScore', calcTotalScore.as_view()),
     path('getLang', LanguageAPI.as_view()),
