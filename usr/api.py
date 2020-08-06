@@ -214,14 +214,13 @@ class StudentRegisterAPI(generics.GenericAPIView):
           if x > 1000000:
               raise Exception("Name is super popular!")
 
-    def password_generator(Firstname,Lastname):
-      password_characters ="CSBC"+ string.ascii_letters+  string.digits
-      password=random.choice(Firstname[0].upper())
-      password=password+random.choice(string.punctuation)
-      password=password+random.choice(Lastname.lower())
-      password=password+random.choice(string.punctuation)
-      newpassword= ''.join(random.choice(password_characters) for i in range(8))
-      return password+newpassword
+    def password_generator(loginID):
+      sum=0
+      for i in range(len(loginID)):
+        number=len(loginID)-i
+        result=ord(loginID[i])*number
+        sum=sum+result
+      return str(sum)
 
     def post(self, request):
       try:
@@ -234,7 +233,7 @@ class StudentRegisterAPI(generics.GenericAPIView):
         request.data['username']=username
         loginID=StudentRegisterAPI.loginID_generator(Firstname,Lastname)
         request.data['loginID']=loginID
-        password=StudentRegisterAPI.password_generator(Firstname,Lastname)
+        password=StudentRegisterAPI.password_generator(loginID)
         request.data['password']=password
         pass_encrypt=encrypt(request.data['password'])
         request.data['password']=pass_encrypt
@@ -285,7 +284,7 @@ class StudentBulkRegisterAPI(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated,]
     serializer_class = RegisterSerializer
     def post(self, request):
-
+      # print(request.data)
       responsedata=[]
       try:
         for data in request.data:
@@ -300,8 +299,10 @@ class StudentBulkRegisterAPI(generics.GenericAPIView):
             data['username']=username
             loginID=StudentRegisterAPI.loginID_generator(Firstname,Lastname)
             data['loginID']=loginID
-            password=StudentRegisterAPI.password_generator(Firstname,Lastname)
+            password=StudentRegisterAPI.password_generator(loginID)
+            print(password)
             data['password']=password
+            print(password)
             pass_encrypt=encrypt(data['password'])
             data['password']=pass_encrypt
             if data['birthdate']=='':
@@ -599,17 +600,23 @@ class UserExcelAPI(APIView):
       try:
         current_user = request.user
         print("User logged in ",current_user.loginID)
+        teacherroleid=UserRole.objects.get(userID=current_user.userID)
+        teacherlocationid=UserRoleLocation.objects.get(userRoleID=teacherroleid)
+        school_of_teacher=school.objects.get(schoolID=teacherlocationid.locationObjectID)
         userroles=UserRole.objects.filter(RoleID=StudentRoleID).values_list('userID', flat=True)
         user_ids=list(userroles)
         users = User.objects.filter(userID__in=user_ids,created_by=current_user.loginID)
         serializer = StudentSerializer(users, many=True)
         for data in serializer.data:
           pass_decrypt=decrypt(data['password'])
+          names=data['username'].split(' ')
+          data['firstName']=names[0]
+          data['lastName']=names[1]
           data['password']=pass_decrypt
           print(data)
-        return JsonResponse({"users":serializer.data}, safe=False)
+        return JsonResponse({"users":serializer.data,"UDISECode":school_of_teacher.UDISEcode}, safe=False)
       except Exception as e:
-        return HttpResponse(e,status=401)
+        return HttpResponse(e,status=404)
 class AllStudentsEnrolledViewAPI(APIView):
     permission_classes = [permissions.IsAuthenticated, ]
     serializer_class = UserViewSerializer
