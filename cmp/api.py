@@ -436,7 +436,7 @@ class validateOfflineUpload(generics.GenericAPIView):
     def post(self, request):
       try:
         error=False
-        # print(request.data)
+        print(request.data)
         compName=request.data['competitionName']
         responses=request.data['responses']
 
@@ -446,7 +446,8 @@ class validateOfflineUpload(generics.GenericAPIView):
           result=validateOfflineUpload.IsUserRegistered(data)
           if(not(result)):
             responsestring=responsestring+"User Not Registered, UserID password do not match, User not enrolled, Agegroup Not Correct"
-            data['Comments']=responsestring
+            data.update( {'Comments' : responsestring} )
+            # data['Comments']=responsestring
             error=True
             continue
           result=validateOfflineUpload.IsLoginCredsCorrect(data)
@@ -458,9 +459,10 @@ class validateOfflineUpload(generics.GenericAPIView):
           result=validateOfflineUpload.IsAgeGroupValid(data,compName)
           if(not(result)):
             responsestring=responsestring+", Agegroup Not Correct"
-          data['Comments']=responsestring
+          data.update( {'Comments' : responsestring} )
           if responsestring!="":
             error=True
+        print(responses)
         if error:
             return JsonResponse(responses, safe=False,status=400)
         else:
@@ -572,9 +574,15 @@ class studentResponseFromExcelAPI(generics.GenericAPIView):
           current_user=User.objects.get(loginID=d['Userid'])
           current_studentenrolled=studentEnrollment.objects.filter(userID=current_user)
           grp= (d['Group']).lower()
+          print(d)
           del d['Userid']
           del d['Paswd']
           del d['Group']
+          if 'Comments' in d.keys(): 
+            del d['Comments']
+          else:
+             print("Comments absent")
+
           for key, val in maps_groups.items(): 
             if val == grp: 
               ageGroup=key
@@ -591,12 +599,13 @@ class studentResponseFromExcelAPI(generics.GenericAPIView):
           if studentenrollmentid==None:
             responsestring="The user "+current_user.loginID+" has not been enrolled "
             return Response(responsestring,status=400)
+          print(d)
           for key, value in d.items():
             studentresponsedata={}
             print( (key), value)
             index=int(key)-1
             if index>=len(questions):
-              break
+              continue
             ques=questions[index]
             quesTranslation=questionTranslation.objects.get(Identifier=ques)
             print("got question ",quesTranslation)
