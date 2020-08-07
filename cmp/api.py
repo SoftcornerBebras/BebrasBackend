@@ -383,27 +383,25 @@ class validateOfflineUpload(generics.GenericAPIView):
     ]
     serializer_class = StudentResponseSerializer
     def IsUserRegistered(data):
-      print(data['Userid'])
+      print(data['userid'])
       try:
-        if User.objects.filter(loginID=data['Userid']).count() == 0:
+        if User.objects.filter(loginID=data['userid']).count() == 0:
             return False
         else:
             return True
       except Exception as e:
         print(e)
     def IsLoginCredsCorrect(data):
-      print(data['Userid'],data['Paswd'])
-      user=User.objects.get(loginID=data['Userid'])
+      print(data['userid'],data['paswd'])
+      user=User.objects.get(loginID=data['userid'])
       pass_decrypt=decrypt(user.password)
       print(pass_decrypt)
-      if(pass_decrypt==data['Paswd'].strip()):
+      if(pass_decrypt==data['paswd'].strip()):
           return True
       else:
           return False
-   
     def IsStudentEnrolled(data,compName):
-      print(data['Userid'],data['Paswd'])
-      user=User.objects.get(loginID=data['Userid'])
+      user=User.objects.get(loginID=data['userid'])
       studentenrollmentid=None
       student_enrolled=studentEnrollment.objects.filter(userID=user.userID)
       for studentenroll in student_enrolled:
@@ -412,17 +410,16 @@ class validateOfflineUpload(generics.GenericAPIView):
       if studentenrollmentid==None:
           return False
       else:
-          return True
-  
+          return True 
     def IsAgeGroupValid(data,compName):
-      print(data['Userid'],data['Paswd'])
-      grp= (data['Group']).lower()
+      print(data['userid'],data['paswd'])
+      grp= (data['group']).lower()
       studentenrollmentid=None
       for key, val in maps_groups.items(): 
           if val == grp: 
             ageGroup=key
       print(ageGroup)
-      user=User.objects.get(loginID=data['Userid'])
+      user=User.objects.get(loginID=data['userid'])
       student_enrolled=studentEnrollment.objects.filter(userID=user.userID)
       for studentenroll in student_enrolled:
         print(studentenroll.competitionAgeID.competitionID.competitionName,compName,studentenroll.competitionAgeID.AgeGroupClassID.AgeGroupID.AgeGroupName==ageGroup)
@@ -436,27 +433,33 @@ class validateOfflineUpload(generics.GenericAPIView):
     def post(self, request):
       try:
         error=False
-        print(request.data)
+        print(type(request.data))
+        
         compName=request.data['competitionName']
         responses=request.data['responses']
 
         for data in responses:
           responsestring=""
           print(data)
-          result=validateOfflineUpload.IsUserRegistered(data)
+          newdata = dict((k.lower(), v) for k, v in data .items()) 
+          print(newdata)
+          result=validateOfflineUpload.IsUserRegistered(newdata)
           if(not(result)):
             responsestring=responsestring+"User Not Registered, UserID password do not match, User not enrolled, Agegroup Not Correct"
             data.update( {'Comments' : responsestring} )
             # data['Comments']=responsestring
             error=True
             continue
-          result=validateOfflineUpload.IsLoginCredsCorrect(data)
+          print("Step 1 succesfull")
+          result=validateOfflineUpload.IsLoginCredsCorrect(newdata)
           if(not(result)):
             responsestring=responsestring+"UserID password do not match"
-          result=validateOfflineUpload.IsStudentEnrolled(data,compName)
+          result=validateOfflineUpload.IsStudentEnrolled(newdata,compName)
+          print("Step 2 succesfull")
           if(not(result)):
             responsestring=responsestring+", User not enrolled"
-          result=validateOfflineUpload.IsAgeGroupValid(data,compName)
+          result=validateOfflineUpload.IsAgeGroupValid(newdata,compName)
+          print("Step 3 succesfull")
           if(not(result)):
             responsestring=responsestring+", Agegroup Not Correct"
           data.update( {'Comments' : responsestring} )
@@ -524,20 +527,20 @@ class studentResponseFromExcelAPI(generics.GenericAPIView):
         #validating data
         for data in responses:
           responsestring=""
-          print(data)
-          result=validateOfflineUpload.IsUserRegistered(data)
+          newdata = dict((k.lower(), v) for k, v in data .items()) 
+          print(newdata)
+          result=validateOfflineUpload.IsUserRegistered(newdata)
           if(not(result)):
             responsestring=responsestring+"User Not Registered, UserID password do not match, User not enrolled, Agegroup Not Correct"
-            data['Comments']=responsestring
             error=True
             continue
-          result=validateOfflineUpload.IsLoginCredsCorrect(data)
+          result=validateOfflineUpload.IsLoginCredsCorrect(newdata)
           if(not(result)):
             responsestring=responsestring+"UserID password do not match"
-          result=validateOfflineUpload.IsStudentEnrolled(data,compName)
+          result=validateOfflineUpload.IsStudentEnrolled(newdata,compName)
           if(not(result)):
             responsestring=responsestring+", User not enrolled"
-          result=validateOfflineUpload.IsAgeGroupValid(data,compName)
+          result=validateOfflineUpload.IsAgeGroupValid(newdata,compName)
           if(not(result)):
             responsestring=responsestring+", Agegroup Not Correct"
           if responsestring!="":
@@ -570,18 +573,19 @@ class studentResponseFromExcelAPI(generics.GenericAPIView):
         #process responses for each student
         for d in responses:
           studentenrollmentid=None
-          print(d['Userid'],d['Paswd'])
-          current_user=User.objects.get(loginID=d['Userid'])
+          newdata = dict((k.lower(), v) for k, v in d.items()) 
+          print(newdata['userid'],newdata['paswd'])
+          current_user=User.objects.get(loginID=newdata['userid'])
           current_studentenrolled=studentEnrollment.objects.filter(userID=current_user)
-          grp= (d['Group']).lower()
+          grp= (newdata['group']).lower()
           print(d)
-          del d['Userid']
-          del d['Paswd']
-          del d['Group']
-          if 'Comments' in d.keys(): 
-            del d['Comments']
+          del newdata['userid']
+          del newdata['paswd']
+          del newdata['group']
+          if 'comments' in newdata.keys(): 
+            del newdata['comments']
           else:
-             print("Comments absent")
+             print("comments absent")
 
           for key, val in maps_groups.items(): 
             if val == grp: 
@@ -599,8 +603,8 @@ class studentResponseFromExcelAPI(generics.GenericAPIView):
           if studentenrollmentid==None:
             responsestring="The user "+current_user.loginID+" has not been enrolled "
             return Response(responsestring,status=400)
-          print(d)
-          for key, value in d.items():
+          print(newdata)
+          for key, value in newdata.items():
             studentresponsedata={}
             print( (key), value)
             index=int(key)-1
