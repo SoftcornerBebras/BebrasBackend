@@ -466,8 +466,9 @@ class validateOfflineUpload(generics.GenericAPIView):
           if responsestring!="":
             error=True
         print(responses)
+        request.data['headers'].append('Comments')
         if error:
-            return JsonResponse(responses, safe=False,status=400)
+            return JsonResponse({"responses":responses,"headers":request.data['headers']}, safe=False,status=400)
         else:
             return Response("Success",status=200)
 
