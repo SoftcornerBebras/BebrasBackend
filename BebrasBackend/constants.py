@@ -1,10 +1,10 @@
 quesList = []
 optList = []
 
-storageURL = "http://54.196.61.229:8000/";
-baseURL = "http://54.196.61.229:3002/";
+storageURL = "https://challenge.bebras.in:8000/";
+baseURL = "https://challenge.bebras.in:3002/";
 # customize ppt change path for uploading ppt
-baseurl='http://54.196.61.229:3001/'
+baseurl='https://challenge.bebras.in/'
 #All data constants
 AdminRoleID=1
 TeacherRoleID=2
@@ -28,6 +28,7 @@ schooltype=101
 gender=100
 optiontext={"option":""}
 domain=104
+
 maps_groups={       "Aryabhata-English":"en2",
                     "Brahmagupta-English":"en3",
                     "Bhaskara-English":"en4",
