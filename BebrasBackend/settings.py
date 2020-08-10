@@ -26,7 +26,7 @@ SALT=b'M\x1c\xbb\x85-\x9e\x0b\xb5g\xfc\xfe\xd9\xc5\xeeJB'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['54.196.61.229']
+ALLOWED_HOSTS = ['54.196.61.229','challenge.bebras.in']
 
 
 # Application definition
